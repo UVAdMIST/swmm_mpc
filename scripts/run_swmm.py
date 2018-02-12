@@ -14,18 +14,18 @@ class swmm_results():
         self.nod_flood = []
         target = []
         with Simulation(input_file) as sim:
-            self.node_obj = Nodes(sim)
-            self.link_obj = Links(sim)
             for step in sim:
-                print self.nod_depth
+                self.node_obj = Nodes(sim)
+                self.link_obj = Links(sim)
                 self.nod_depth.extend(self.get_values("node", self.node_obj, sim, "depth"))
-                self.nod_depth.extend(self.get_values("node", self.node_obj, sim, "flooding"))
+                self.node_obj = Nodes(sim)
+                self.nod_flood.extend(self.get_values("node", self.node_obj, sim, "flooding"))
                 self.link_flow.extend(self.get_values("link", self.link_obj, sim, "flow"))
 
             sim.report()
 
         self.node_depth_df = self.make_df_from_dicts(self.nod_depth)
-        # self.node_flood_df = self.make_df_from_dicts(self.nod_flood)
+        self.node_flood_df = self.make_df_from_dicts(self.nod_flood)
         self.con_flow_df = self.make_df_from_dicts(self.link_flow)
 
     def condense_df_by_datetime(self, df):
@@ -52,9 +52,8 @@ class swmm_results():
         id_name = "{}id".format(typ)
         l = []
         for o in obj:
-            data_dict = {o.__getattribute__(id_name): o.__getattribute__(attr),
-                         "datetime": sim_obj.current_time
-                         }
+            data_dict = {o.__getattribute__(id_name): o.__getattribute__(attr)}
+            data_dict["datetime"]= sim_obj.current_time
             l.append(data_dict)
         return l
 
