@@ -6,27 +6,27 @@ import pandas as pd
 pyswmm.lib.use("swmm5_conda.dll")
 
 
-class swmm_results(input_file):
-    def __init__():
+class swmm_results():
+    def __init__(self, input_file):
 
-    link_flow = []
-    nod_depth = []
-    nod_flood = []
-    target = []
-    with Simulation("../example_smart.inp") as sim:
-        node_obj = Nodes(sim)
-        link_obj = Links(sim)
-        ori = link_obj["C8"]
-        for step in sim:
-            nod_depth.extend(self.get_values("node", node_obj, sim, "depth"))
-            nod_depth.extend(self.get_values("node", node_obj, sim, "flooding"))
-            link_flow.extend(self.get_values("link", link_obj, sim, "flow"))
+        self.link_flow = []
+        self.nod_depth = []
+        self.nod_flood = []
+        target = []
+        with Simulation(input_file) as sim:
+            self.node_obj = Nodes(sim)
+            self.link_obj = Links(sim)
+            for step in sim:
+                print self.nod_depth
+                self.nod_depth.extend(self.get_values("node", self.node_obj, sim, "depth"))
+                self.nod_depth.extend(self.get_values("node", self.node_obj, sim, "flooding"))
+                self.link_flow.extend(self.get_values("link", self.link_obj, sim, "flow"))
 
-        sim.report()
+            sim.report()
 
-    node_depth_df = make_df_from_dicts(nod_depth)
-    node_flood_df = make_df_from_dicts(nod_depth)
-    con_flow_df = make_df_from_dicts(link_flow)
+        self.node_depth_df = self.make_df_from_dicts(self.nod_depth)
+        # self.node_flood_df = self.make_df_from_dicts(self.nod_flood)
+        self.con_flow_df = self.make_df_from_dicts(self.link_flow)
 
     def condense_df_by_datetime(self, df):
         return df.groupby("datetime").mean()
