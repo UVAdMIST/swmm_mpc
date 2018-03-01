@@ -22,6 +22,6 @@ lines[2].set_linestyle("--")
 lgd = ax.legend(loc='lower left', bbox_to_anchor=(0, 1), ncol=1, fontsize=font_size)
 ax.set_xlabel("Time elapsed (hr)", fontsize=font_size)
 fig = plt.gcf()
-fig.savefig("dumb_vs_smart",  bbox_inches="tight")
+fig.savefig("../../figures/dumb_vs_smart",  bbox_inches="tight")
 
 plt.show()
