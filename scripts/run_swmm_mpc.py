@@ -13,7 +13,17 @@ input_file_tmp_inp = input_file_tmp_base + ".inp"
 copyfile(input_file, input_file_tmp_inp)
 
 def update_junction_depths(lines, i, depths):
-    pass
+    for node_id in depths:
+        for j, l in enumerate(lines[i:]):
+            if l.startswith(node_id):
+                old_values = l[16:].split()
+                old_values = [float(v) for v in old_values]
+                old_values[2] = depths[node_id]
+                new_string = "{: <11.4f}" * 5 + "\n"
+                new_string = l[:17] + new_string.format(*old_values)
+                lines[i+j] = new_string
+                break 
+    return lines
 
 def update_storage_depths(lines, i, depths):
     pass
@@ -36,9 +46,18 @@ def get_link_flows(link_obj):
     return flow_dict
 
 def get_node_depths(node_obj):
-    depth_dict = {}
+    junction_depth_dict = {}
+    storage_depth_dict = {}
+    outfall_depth_dict = {}
     for n in node_obj:
-        depth_dict[n.nodeid] = n.depth
+        if n.is_junction():
+            junction_depth_dict[n.nodeid] = n.depth
+        elif n.is_storage():
+            storage_depth_dict[n.nodeid] = n.depth
+        elif n.is_outfall():
+            outfall_depth_dict[n.nodeid] = n.depth
+    depth_dict = {'junctions': junction_depth_dict, 'storage': storage_depth_dict, 
+            'outfalls': outfall_depth_dict }
     return depth_dict
 
 
@@ -52,9 +71,9 @@ def update_tmp_file(new_date_time, node_obj, link_obj):
         if l.startswith("START_DATE"):
             new_lines = update_simulation_date_time(lines, i, new_date_time)
         elif l.startswith("[JUNCTIONS]"):
-            new_lines  = update_junction_depths(lines, i, depths)
+            new_lines  = update_junction_depths(lines, i, depths['junctions'])
         elif l.startswith("[STORAGE]"):
-            new_lines = update_storage_depths(lines, i, depths)
+            new_lines = update_storage_depths(lines, i, depths['storage'])
         elif l.startswith("[CONDUITS]"):
             new_lines = update_conduit_flows(lines, i, flows)
 
