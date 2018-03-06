@@ -12,24 +12,16 @@ input_file_tmp_base = input_file.replace(".inp", "_tmp")
 input_file_tmp_inp = input_file_tmp_base + ".inp"
 copyfile(input_file, input_file_tmp_inp)
 
-def update_junction_depths(lines, i, depths):
-    for node_id in depths:
+def update_depths_or_flows(lines, i, depths_or_flows, col_name):
+    init_depth_loc = lines[i+1].find(col_name)
+    for obj_id in depths_or_flows:
         for j, l in enumerate(lines[i:]):
-            if l.startswith(node_id):
-                old_values = l[16:].split()
-                old_values = [float(v) for v in old_values]
-                old_values[2] = depths[node_id]
-                new_string = "{: <11.4f}" * 5 + "\n"
-                new_string = l[:17] + new_string.format(*old_values)
+            if l.startswith(obj_id):
+                new_value_string = "{: <11.4f}".format(depths_or_flows[obj_id]) 
+                new_string = l[:init_depth_loc] + new_value_string + l[init_depth_loc+11: ]
                 lines[i+j] = new_string
                 break 
     return lines
-
-def update_storage_depths(lines, i, depths):
-    pass
-
-def update_conduit_flows(lines, i, flows):
-    pass
 
 def update_simulation_date_time(lines, i, new_datetime):
     new_date = new_datetime.strftime("%m/%d/%Y")
@@ -71,11 +63,11 @@ def update_tmp_file(new_date_time, node_obj, link_obj):
         if l.startswith("START_DATE"):
             new_lines = update_simulation_date_time(lines, i, new_date_time)
         elif l.startswith("[JUNCTIONS]"):
-            new_lines  = update_junction_depths(lines, i, depths['junctions'])
+            new_lines  = update_depths_or_flows(lines, i, depths['junctions'], "InitDepth")
         elif l.startswith("[STORAGE]"):
-            new_lines = update_storage_depths(lines, i, depths['storage'])
+            new_lines = update_depths_or_flows(lines, i, depths['storage'], "InitDepth")
         elif l.startswith("[CONDUITS]"):
-            new_lines = update_conduit_flows(lines, i, flows)
+            new_lines = update_depths_or_flows(lines, i, flows, "InitFlow")
 
 
     with open(input_file_tmp_inp, 'w') as tmp_file:
@@ -89,7 +81,7 @@ with Simulation(input_file) as sim:
         link_obj = Links(sim)
         current_date_time = sim.current_time
         update_tmp_file(current_date_time, node_obj, link_obj)
-        # cmd = "swmm5.exe {0}.inp {0}.rpt {0}.out".format(input_file_tmp_base)
-        # subprocess.call(cmd, shell=True)
+        cmd = "swmm5.exe {0}.inp {0}.rpt {0}.out".format(input_file_tmp_base)
+        subprocess.call(cmd, shell=True)
 end = time.time()
 print (end - start)
