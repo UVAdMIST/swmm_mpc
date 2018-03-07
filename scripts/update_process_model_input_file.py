@@ -34,3 +34,51 @@ def update_process_model_file(inp_file, new_date_time, new_depths, new_flows):
 
     with open(inp_file, 'w') as tmp_file:
         tmp_file.writelines(lines)
+
+def find_control_section(lines):
+    # check if CONTROL section is in the input file
+    control_line = None
+    end_control_section = None
+    for i, l in enumerate(lines):
+        if l.startswith("[CONTROLS]"):
+           control_line = i 
+           for j, ll in enumerate(lines[i+1:]):
+               if ll.startswith("["):
+                   end_control_section = j + i
+                   break
+    return control_line, end_control_section
+
+def get_control_rule_string(control_time_step, policies):
+    new_lines = ["[CONTROLS] \n"]
+    rule_number = 0
+    # control_time_step is in seconds. convert to hours
+    control_time_step_hours = control_time_step/3600.
+    for structure_id in policies:
+        for i, policy_step in enumerate(policies[structure_id]):
+            l1 = "RULE R{} \n".format(rule_number)
+            l2 = "IF SIMULATION TIME < {:.3f} \n".format((i+1) * control_time_step_hours)
+            l3 = "THEN {} SETTING = {} \n".format(structure_id, policy_step) 
+            l4 = "\n"
+            new_lines.extend([l1, l2, l3, l4])
+            rule_number += 1
+    return new_lines
+
+def update_controls(inp_file, control_time_step, policies):
+    """
+    policies: dict; structure id (e.g., ORIFICE R1) as key, list of settings as value; 
+
+    """
+    with open(inp_file, 'r') as inpfile:
+        lines = inpfile.readlines()
+    
+    control_line, end_control_line = find_control_section(lines)
+    if control_line and end_control_line:
+        del lines[control_line: end_control_line]
+    else:
+        control_line = len(lines)
+
+    control_rule_string = get_control_rule_string(control_time_step, policies)
+    lines[control_line: control_line] = control_rule_string
+    
+    with open(inp_file, 'w') as inpfile:
+        inpfile.writelines(lines)
