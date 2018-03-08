@@ -1,4 +1,5 @@
 import pyswmm
+import datetime
 from pyswmm import Simulation, Nodes, Links
 from shutil import copyfile
 import pandas as pd
@@ -53,19 +54,27 @@ def get_node_depths(node_obj):
 
 
 def main():
+    beg_time = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M")
     start = time.time()
     depth_ts = []
+    best_policy_ts = []
     with Simulation(input_file) as sim:
         sim.step_advance(control_time_step)
         for step in sim:
             # get most current system states
+            current_date_time = sim.current_time
+
+            # get node depths
             node_obj = Nodes(sim)
             depths = get_node_depths(node_obj)
-            depth_ts.append(get_flat_depth_dict(depths))
+            flat_depths = get_flat_depth_dict(depths)
+            flat_depths['datetime': current_date_time]
+            depth_ts.append(flat_depths)
+
+            # get link flows
             link_obj = Links(sim)
             orifice = link_obj["R1"]
             flows = get_link_flows(link_obj)
-            current_date_time = sim.current_time
 
             # update the process model with the current states
             up.update_process_model_file(input_process_file_inp, current_date_time, depths, flows)
@@ -75,15 +84,19 @@ def main():
 
             # run prediction to get best policy 
             best_policy = run_ea.run_ea(nsteps)
+            best_policy_per = best_policy[0]/10.
+            best_policy_list.append({"setting":best_policy_per, "datetime":current_date_time})
 
             #implement best policy
-            orifice.target_setting = best_policy[0]/10.
+            orifice.target_setting = best_policy_per
 
             end = time.time()
     print (end - start)
-    df = pd.DataFrame(depth_ts)
-    df.to_csv("../data/depth_results.csv")
-    return df
+    depths_df = pd.DataFrame(depth_ts)
+    depths_df.to_csv("../data/depth_results_{}.csv".format(beg_time))
+
+    control_settings_df = pd.DataFrame(best_policy_list)
+    control_settings_df.to_csv("../data/control_results_{}.csv".format(beg_time))
 
 if __name__ == "__main__":
     main()
