@@ -10,7 +10,7 @@ input_process_file_base = input_file.replace(".inp", "_process")
 input_process_file_inp = input_process_file_base + ".inp"
 copyfile(input_file, input_process_file_inp)
 
-control_time_step = 600
+control_time_step = 1800
 control_str_id = "ORIFICE R1"
 def get_link_flows(link_obj):
     flow_dict = {}
@@ -33,15 +33,20 @@ def get_node_depths(node_obj):
             'outfalls': outfall_depth_dict }
     return depth_dict
 
-start = time.time()
-with Simulation(input_file) as sim:
-    sim.step_advance(control_time_step)
-    for step in sim:
-        node_obj = Nodes(sim)
-        depths = get_node_depths(node_obj)
-        link_obj = Links(sim)
-        flows = get_link_flows(link_obj)
-        current_date_time = sim.current_time
-        update_process_model_file(input_process_file_inp, current_date_time, depths, flows)
-end = time.time()
-print (end - start)
+
+def main():
+    start = time.time()
+    with Simulation(input_file) as sim:
+        sim.step_advance(control_time_step)
+        for step in sim:
+            node_obj = Nodes(sim)
+            depths = get_node_depths(node_obj)
+            link_obj = Links(sim)
+            flows = get_link_flows(link_obj)
+            current_date_time = sim.current_time
+            update_process_model_file(input_process_file_inp, current_date_time, depths, flows)
+            end = time.time()
+            print (end - start)
+
+if __name__ == "__main__":
+    main()
