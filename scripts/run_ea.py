@@ -1,4 +1,5 @@
 from deap import base, creator, tools, algorithms
+import string
 from scoop import futures
 import pandas as pd
 import numpy as np
@@ -18,8 +19,10 @@ FNULL = open(os.devnull, 'w')
 
 def evaluate(individual):
     # make process model tmp file
-    input_tmp_process_file_base = input_process_file_base + "_tmp"
+    rand_string = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
+    input_tmp_process_file_base = input_process_file_base + "_tmp" + rand_string
     input_tmp_process_inp = input_tmp_process_file_base + ".inp"
+    input_tmp_process_rpt = input_tmp_process_file_base + ".rpt"
     copyfile(input_process_file_inp, input_tmp_process_inp)
 
     # convert individual to percentages
@@ -38,12 +41,17 @@ def evaluate(individual):
     nodes = mymodel.nodes()
     nodes.fillna(0, inplace=True)
     storage_flood_volume = nodes.loc['St1']['TotalFloodVol']
+    storage_flood_cost = (100*storage_flood_volume)**3
     node_flood_volume = nodes.loc['J3']['TotalFloodVol']
+    node_flood_cost = (100*node_flood_volume)*2 
     target_storage_level = 1.
     avg_dev_fr_tgt_st_lvl = nodes.loc['St1', 'AvgDepth'] - target_storage_level
+    deviation_cost = avg_dev_fr_tgt_st_lvl/10.
 
     # convert the contents of the output file into a cost
-    cost = 2 * storage_flood_volume**3 + node_flood_volume*2 + avg_dev_fr_tgt_st_lvl 
+    cost =  storage_flood_cost + node_flood_cost + deviation_cost
+    os.remove(input_tmp_process_inp)
+    os.remove(input_tmp_process_rpt)
     return cost,
 
 creator.create('FitnessMin', base.Fitness, weights=(-1.0,))

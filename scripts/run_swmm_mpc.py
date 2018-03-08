@@ -10,7 +10,7 @@ input_process_file_base = input_file.replace(".inp", "_process")
 input_process_file_inp = input_process_file_base + ".inp"
 copyfile(input_file, input_process_file_inp)
 
-control_time_step = 1800
+control_time_step = 900
 control_str_id = "ORIFICE R1"
 def get_link_flows(link_obj):
     flow_dict = {}
