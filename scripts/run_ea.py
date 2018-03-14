@@ -44,7 +44,7 @@ def evaluate(individual):
     node_flood_cost = (100*node_flood_volume)*2 
     target_storage_level = 1.
     avg_dev_fr_tgt_st_lvl = target_storage_level - nodes.loc['St1', 'AvgDepth']
-    if avg_dev_fr_tgt_st_lvl > 0:
+    if avg_dev_fr_tgt_st_lvl < 0:
         avg_dev_fr_tgt_st_lvl = 0
 
     deviation_cost = avg_dev_fr_tgt_st_lvl/10.
@@ -61,7 +61,6 @@ creator.create('Individual', list, fitness=creator.FitnessMin)
 toolbox = base.Toolbox()
 toolbox.register("map", futures.map)
 toolbox.register("attr_int", random.randint, 0, 10)
-toolbox.register('population', tools.initRepeat, list, toolbox.individual)
 toolbox.register('evaluate', evaluate)
 toolbox.register("mate", tools.cxTwoPoint)
 toolbox.register("mutate", tools.mutUniformInt, low=0, up=10, indpb=0.10)
@@ -70,6 +69,7 @@ toolbox.register("select", tools.selTournament, tournsize=6)
 def run_ea(nsteps):
     toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_int, 
             nsteps)
+    toolbox.register('population', tools.initRepeat, list, toolbox.individual)
     ngen = 5
     nindividuals = 80
     pop = toolbox.population(n=nindividuals)

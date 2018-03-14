@@ -15,7 +15,7 @@ copyfile(input_file, input_process_file_inp)
 
 control_horizon = 6. # hr
 control_time_step = 900. # sec
-n_control_steps = control_time_step*3600/control_time_step
+n_control_steps = int(control_horizon*3600/control_time_step)
 control_str_id = "ORIFICE R1"
 
 def get_flat_depth_dict(depths):
@@ -31,9 +31,9 @@ def get_link_flows(link_obj):
 
 def get_nsteps_remaining(sim):
     time_remaining = sim.end_time - sim.current_time 
-    steps = time_remaining/control_time_step
+    steps = time_remaining.seconds/control_time_step
     if steps < n_control_steps:
-        return steps
+        return int(steps)
     else:
         return n_control_steps
 
@@ -68,7 +68,7 @@ def main():
             node_obj = Nodes(sim)
             depths = get_node_depths(node_obj)
             flat_depths = get_flat_depth_dict(depths)
-            flat_depths['datetime': current_date_time]
+            flat_depths['datetime'] = current_date_time
             depth_ts.append(flat_depths)
 
             # get link flows
@@ -85,7 +85,7 @@ def main():
             # run prediction to get best policy 
             best_policy = run_ea.run_ea(nsteps)
             best_policy_per = best_policy[0]/10.
-            best_policy_list.append({"setting":best_policy_per, "datetime":current_date_time})
+            best_policy_ts.append({"setting":best_policy_per, "datetime":current_date_time})
 
             #implement best policy
             orifice.target_setting = best_policy_per
@@ -95,7 +95,7 @@ def main():
     depths_df = pd.DataFrame(depth_ts)
     depths_df.to_csv("../data/depth_results_{}.csv".format(beg_time))
 
-    control_settings_df = pd.DataFrame(best_policy_list)
+    control_settings_df = pd.DataFrame(best_policy_ts)
     control_settings_df.to_csv("../data/control_results_{}.csv".format(beg_time))
 
 if __name__ == "__main__":
