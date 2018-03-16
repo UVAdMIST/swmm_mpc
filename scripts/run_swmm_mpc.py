@@ -34,6 +34,8 @@ def get_nsteps_remaining(sim):
     steps = time_remaining.seconds/control_time_step
     if steps < n_control_steps:
         return int(steps)
+    elif steps < 3:
+        return 2
     else:
         return n_control_steps
 
@@ -82,10 +84,11 @@ def main():
             # get num control steps remaining
             nsteps = get_nsteps_remaining(sim)
 
-            # run prediction to get best policy 
-            best_policy = run_ea.run_ea(nsteps)
-            best_policy_per = best_policy[0]/10.
-            best_policy_ts.append({"setting":best_policy_per, "datetime":current_date_time})
+            if nsteps > 1:
+                # run prediction to get best policy 
+                best_policy = run_ea.run_ea(nsteps)
+                best_policy_per = best_policy[0]/10.
+                best_policy_ts.append({"setting":best_policy_per, "datetime":current_date_time})
 
             #implement best policy
             orifice.target_setting = best_policy_per
