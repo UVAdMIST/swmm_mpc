@@ -9,8 +9,9 @@ rc('text', usetex=True)
 
 res_dumb = swmm_results("../simple_model/simple_dumb.inp")
 res_smrt = swmm_results("../simple_model/simple_smart.inp")
-res_mpc = pd.read_csv("../data/depth_results_03082018.csv")
+res_mpc = pd.read_csv("../data/depth_results_2018.03.15.15.16.csv")
 res_mpc.index = res_mpc.index/4.
+fig_suffix = "5gen_80indv_origcost"
 
 # plot node depths at J3
 col_names = [ r"DS Node Depth (ft)-\textit{Passive}", r"DS Node Flooding (cfs)-\textit{Passive}", 
@@ -34,7 +35,8 @@ lines[3].set_color(mpc_color)
 lgd = ax.legend(loc='lower left', bbox_to_anchor=(0, 1), ncol=1, fontsize=font_size)
 ax.set_xlabel("Time elapsed (hr)", fontsize=font_size)
 fig = plt.gcf()
-fig.savefig("../../figures/dumb_vs_smart_vs_mpc_node_depth",  bbox_inches="tight")
+fig.savefig("../../figures/dumb_vs_smart_vs_mpc_node_depth_{}".format(fig_suffix),  
+        bbox_inches="tight")
 
 # plot storage depths at St1
 storage_node = "St1"
@@ -51,6 +53,7 @@ lines[1].set_color(rule_color)
 lines[2].set_color(mpc_color)
 lgd = ax.legend(loc='lower left', bbox_to_anchor=(0, 1), ncol=1, fontsize=font_size)
 fig = plt.gcf()
-fig.savefig("../../figures/dumb_vs_smart_vs_mpc_storage_depth",  bbox_inches="tight")
+fig.savefig("../../figures/dumb_vs_smart_vs_mpc_storage_depth_{}".format(fig_suffix),
+        bbox_inches="tight")
 
 plt.show()
