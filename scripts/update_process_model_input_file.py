@@ -1,4 +1,5 @@
 import re
+import pandas as pd
 
 def update_depths_or_flows(lines, i, depths_or_flows, col_name):
     init_depth_loc = lines[i+1].find(col_name)
@@ -65,6 +66,7 @@ def get_control_rule_string(control_time_step, policies):
 
 def update_controls(inp_file, control_time_step, policies):
     """
+    control_time_step: number; in seconds
     policies: dict; structure id (e.g., ORIFICE R1) as key, list of settings as value; 
 
     """
@@ -82,3 +84,16 @@ def update_controls(inp_file, control_time_step, policies):
     
     with open(inp_file, 'w') as inpfile:
         inpfile.writelines(lines)
+
+def update_controls_with_resulting_policy(inp_file, control_time_step, policy_file):
+    policy_df = pd.read_csv(policy_file)
+    policy_columns = [col for col in policy_df.columns if "setting" in col]
+    policy_dict = {}
+    for policy_col in policy_columns:
+        structure_id = policy_col.split("_")[-1]
+        policy_dict[structure_id] = policy_df[policy_col].tolist()
+
+    update_controls(inp_file, control_time_step, policy_dict)   
+    
+
+

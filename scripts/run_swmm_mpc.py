@@ -88,7 +88,7 @@ def main():
                 # run prediction to get best policy 
                 best_policy = run_ea.run_ea(nsteps)
                 best_policy_per = best_policy[0]/10.
-                best_policy_ts.append({"setting":best_policy_per, "datetime":current_date_time})
+                best_policy_ts.append({"setting_{}".format(control_str_id):best_policy_per, "datetime":current_date_time})
 
             #implement best policy
             orifice.target_setting = best_policy_per

@@ -2,10 +2,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import rc
 import pandas as pd
-from run_swmm import swmm_results
+from swmm_timeseries_results import swmm_results
 
 # activate latex text rendering
-rc('text', usetex=True)
+# rc('text', usetex=True)
 
 res_dumb = swmm_results("../simple_model/simple_dumb.inp")
 res_smrt = swmm_results("../simple_model/simple_smart.inp")
@@ -14,15 +14,15 @@ res_mpc.index = res_mpc.index/4.
 fig_suffix = "5gen_80indv_origcost"
 
 # plot node depths at J3
-col_names = [ r"DS Node Depth (ft)-\textit{Passive}", r"DS Node Flooding (cfs)-\textit{Passive}", 
-        r"DS Node Depth (ft)-\textit{Rules}"]
+col_names = [ r"DS Node Depth (ft)-Passive", r"DS Node Flooding (cfs)-Passive", 
+        r"DS Node Depth (ft)-Rules"]
 node_id = "J3"
 comb = pd.concat([res_dumb.node_depth_df[node_id], res_dumb.node_flood_df[node_id], 
     res_smrt.node_depth_df[node_id]], 1)
 comb.columns = col_names 
 font_size = 12
 ax = comb.plot(fontsize=font_size, lw=3)
-ax.plot(res_mpc.index, res_mpc[node_id], label = r"DS Node Depth (ft)-\textit{MPC}", lw=3)
+ax.plot(res_mpc.index, res_mpc[node_id], label = r"DS Node Depth (ft)-MPC", lw=3)
 lines = ax.lines
 passive_color = "0.55"
 rule_color = "royalblue"
@@ -40,11 +40,11 @@ fig.savefig("../../figures/dumb_vs_smart_vs_mpc_node_depth_{}".format(fig_suffix
 
 # plot storage depths at St1
 storage_node = "St1"
-col_names = [r"Storage Depth -\textit{Passive}", r"Storage Depth -\textit{Rules}"]
+col_names = [r"Storage Depth - Passive", r"Storage Depth - Rules"]
 comb = pd.concat([res_dumb.node_depth_df[storage_node], res_smrt.node_depth_df[storage_node]], 1)
 comb.columns = col_names
 ax = comb.plot(lw=3)
-ax.plot(res_mpc.index, res_mpc[storage_node], label = r"Storage Depth -\textit{MPC}", lw=3)
+ax.plot(res_mpc.index, res_mpc[storage_node], label = r"Storage Depth - MPC", lw=3)
 ax.set_xlabel("Time elapsed (hr)", fontsize=font_size)
 ax.set_ylabel("ft", fontsize=font_size)
 lines = ax.lines
