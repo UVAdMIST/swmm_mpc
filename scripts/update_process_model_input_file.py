@@ -13,10 +13,15 @@ def update_depths_or_flows(lines, i, depths_or_flows, col_name):
     return lines
 
 def update_simulation_date_time(lines, i, new_datetime):
+    """
+    replace both the analysis and reporting start date and times
+    """
     new_date = new_datetime.strftime("%m/%d/%Y")
     new_time = new_datetime.strftime("%H:%M:%S")
     lines[i] = re.sub(r'\d{2}\\\d{2}\\\d{2}', new_date, lines[i])
     lines[i+1] = re.sub(r'\d{2}:\d{2}:\d{2}', new_time, lines[i+1])
+    lines[i+2] = re.sub(r'\d{2}\\\d{2}\\\d{2}', new_date, lines[i+2])
+    lines[i+3] = re.sub(r'\d{2}:\d{2}:\d{2}', new_time, lines[i+3])
     return lines
 
 def update_process_model_file(inp_file, new_date_time, new_depths, new_flows):
@@ -33,7 +38,10 @@ def update_process_model_file(inp_file, new_date_time, new_depths, new_flows):
         elif l.startswith("[CONDUITS]"):
             new_lines = update_depths_or_flows(lines, i, new_flows, "InitFlow")
 
-    with open(inp_file, 'w') as tmp_file:
+    new_date_time_string = new_date_time.strftime("%Y.%m.%d_%H.%M.%S")
+    new_file_end = "{}.inp".format(new_date_time_string)
+    new_file_name = inp_file.replace(".inp", new_file_end)
+    with open(new_file_name, 'w') as tmp_file:
         tmp_file.writelines(lines)
 
 def find_control_section(lines):

@@ -84,22 +84,22 @@ def main():
             # get num control steps remaining
             nsteps = get_nsteps_remaining(sim)
 
-            if nsteps > 1:
-                # run prediction to get best policy 
-                best_policy = run_ea.run_ea(nsteps)
-                best_policy_per = best_policy[0]/10.
-                best_policy_ts.append({"setting_{}".format(control_str_id):best_policy_per, "datetime":current_date_time})
+            # if nsteps > 1:
+                # # run prediction to get best policy 
+                # best_policy = run_ea.run_ea(nsteps)
+                # best_policy_per = best_policy[0]/10.
+                # best_policy_ts.append({"setting_{}".format(control_str_id):best_policy_per, "datetime":current_date_time})
 
-            #implement best policy
-            orifice.target_setting = best_policy_per
+            # #implement best policy
+            # orifice.target_setting = best_policy_per
 
             end = time.time()
     print (end - start)
     depths_df = pd.DataFrame(depth_ts)
     depths_df.to_csv("../data/depth_results_{}.csv".format(beg_time))
 
-    control_settings_df = pd.DataFrame(best_policy_ts)
-    control_settings_df.to_csv("../data/control_results_{}.csv".format(beg_time))
+    # control_settings_df = pd.DataFrame(best_policy_ts)
+    # control_settings_df.to_csv("../data/control_results_{}.csv".format(beg_time))
 
 if __name__ == "__main__":
     main()
