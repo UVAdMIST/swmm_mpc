@@ -2,8 +2,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 class rpt_ele():
-    def __init__(self, inp_file, ele, var):
-        self.inp = inp_file
+    def __init__(self, rpt_file, ele, var):
+        """
+        rpt_file (str): the name of the .rpt file you wante to read
+        ele (str): the name of the element (link or node). e.g., "Node J2" or "Link C1"
+        """
+        self.rpt = rpt_file
         self.ele = ele
         self.var = var
         self.file_contents = self.get_file_contents()
@@ -20,8 +24,9 @@ class rpt_ele():
         for i in range(content_start, content_end):
             content_list.append(self.file_contents[i].split())
         df =  pd.DataFrame(content_list, columns=col_titles)
-        df['Time'] = pd.to_datetime(df['Time'])
-        df.set_index("Time", inplace=True)
+        df["datetime"] = pd.to_datetime(df["Date"] + " " + df["Time"])
+        df["datetime"] = df["datetime"].dt.round('min')
+        df.set_index("datetime", inplace=True)
         for c in df.columns:
             try:
                 df[c] = pd.to_numeric(df[c])
@@ -30,15 +35,15 @@ class rpt_ele():
         return df
 
     def get_file_contents(self):
-        with open(self.inp, 'r') as f:
+        with open(self.rpt, 'r') as f:
             lines = f.readlines()
             return lines
 
     def get_ele_line(self):
         start = None
         for i, l in enumerate(self.file_contents):
-            la = l.strip()
-            if la.startswith("<<< {} >>>".format(self.ele)):
+            la = l.strip().lower()
+            if la.startswith("<<< {} >>>".format(self.ele.lower())):
                 start = i
             if start and la == "":
                 end = i
@@ -46,14 +51,3 @@ class rpt_ele():
 
 
     
-    # def plot_ts(inp_file, ele, var):
-
-
-inp_file = ('../simple_model/s_s_b_50.rpt')
-inp_file2 = ('../simple_model/s_s_b.rpt')
-rpt = rpt_ele(inp_file, "Node J1", "Inflow")
-rpt2 = rpt_ele(inp_file2, "Node J1", "Inflow")
-
-# ax = rpt2.ele_df['Inflow'].plot()
-rpt.ele_df['Inflow'].plot()
-plt.show()
