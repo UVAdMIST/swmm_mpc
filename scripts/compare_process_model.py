@@ -1,4 +1,4 @@
-from plot_rpt import rpt_ele
+from rpt_ele import rpt_ele
 import matplotlib.pyplot as plt
 
 rpt_file = ("../simple_model/s_s_b.rpt")
