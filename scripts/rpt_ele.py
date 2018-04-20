@@ -2,14 +2,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 class rpt_ele():
-    def __init__(self, rpt_file, ele, var):
+    def __init__(self, rpt_file, ele):
         """
         rpt_file (str): the name of the .rpt file you wante to read
         ele (str): the name of the element (link or node). e.g., "Node J2" or "Link C1"
         """
         self.rpt = rpt_file
         self.ele = ele
-        self.var = var
         self.file_contents = self.get_file_contents()
         self.start_line_no, self.end_line_no = self.get_ele_line()
         self.ele_df = self.get_ele_df()
