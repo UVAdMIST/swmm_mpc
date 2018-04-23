@@ -6,12 +6,15 @@ import pandas as pd
 import update_process_model_input_file as up
 import run_ea
 import time
-pyswmm.lib.use("swmm5_conda.dll")
+import os
+pyswmm.lib.use("/home/jeff/Documents/research/Sadler4th_paper/_build/lib/libswmm5.so")
 
-input_file = "../simple_model/simple_smart_blank.inp"
+input_file_dir = os.path.abspath("../simple_model/")
+input_file_name = "simple_smart_blank.inp"
+input_file = os.path.join(input_file_dir, input_file_name)
 input_process_file_base = input_file.replace(".inp", "_process")
 input_process_file_inp = input_process_file_base + ".inp"
-copyfile(input_file, input_process_file_inp)
+copyfile(input_file, os.path.join(input_file_dir, input_process_file_inp))
 
 control_horizon = 6. # hr
 control_time_step = 900. # sec
@@ -66,40 +69,35 @@ def main():
             # get most current system states
             current_date_time = sim.current_time
 
-            # get node depths
-            node_obj = Nodes(sim)
-            depths = get_node_depths(node_obj)
-            flat_depths = get_flat_depth_dict(depths)
-            flat_depths['datetime'] = current_date_time
-            depth_ts.append(flat_depths)
+            dt_hs_file = "{}.hsf".format(current_date_time.strftime("%Y%m%d%H%M"))
+            dt_hs_path = os.path.join(input_file_dir, dt_hs_file)
+            sim.save_hotstart(dt_hs_path)
 
-            # get link flows
-            link_obj = Links(sim)
             orifice = link_obj["R1"]
-            flows = get_link_flows(link_obj)
 
             # update the process model with the current states
-            up.update_process_model_file(input_process_file_inp, current_date_time, depths, flows)
+            up.update_process_model_file(input_process_file_inp, current_date_time, dt_hs_file)
 
             # get num control steps remaining
             nsteps = get_nsteps_remaining(sim)
 
             # if nsteps > 1:
                 # # run prediction to get best policy 
-                # best_policy = run_ea.run_ea(nsteps)
-                # best_policy_per = best_policy[0]/10.
-                # best_policy_ts.append({"setting_{}".format(control_str_id):best_policy_per, "datetime":current_date_time})
+            best_policy = run_ea.run_ea(n_control_steps)
+            best_policy_per = best_policy[0]/10.
+            best_policy_ts.append({"setting_{}".format(control_str_id):best_policy_per, 
+                "datetime":current_date_time})
 
-            # #implement best policy
-            # orifice.target_setting = best_policy_per
+            # implement best policy
+            orifice.target_setting = best_policy_per
 
             end = time.time()
     print (end - start)
     depths_df = pd.DataFrame(depth_ts)
     depths_df.to_csv("../data/depth_results_{}.csv".format(beg_time))
 
-    # control_settings_df = pd.DataFrame(best_policy_ts)
-    # control_settings_df.to_csv("../data/control_results_{}.csv".format(beg_time))
+    control_settings_df = pd.DataFrame(best_policy_ts)
+    control_settings_df.to_csv("../data/control_results_{}.csv".format(beg_time))
 
 if __name__ == "__main__":
     main()

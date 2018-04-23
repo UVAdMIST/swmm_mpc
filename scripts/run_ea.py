@@ -31,7 +31,7 @@ def evaluate(individual):
     update_controls(input_tmp_process_inp, control_time_step, policies)
 
     # run the swmm model
-    cmd = "swmm5.exe {0}.inp {0}.rpt".format(input_tmp_process_file_base)
+    cmd = "swmm5 {0}.inp {0}.rpt".format(input_tmp_process_file_base)
     subprocess.call(cmd, shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
 
     # read the output file

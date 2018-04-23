@@ -1,16 +1,6 @@
 import re
 import pandas as pd
 
-def update_depths_or_flows(lines, i, depths_or_flows, col_name):
-    init_depth_loc = lines[i+1].find(col_name)
-    for obj_id in depths_or_flows:
-        for j, l in enumerate(lines[i:]):
-            if l.startswith(obj_id):
-                new_value_string = "{: <11.4f}".format(depths_or_flows[obj_id]) 
-                new_string = l[:init_depth_loc] + new_value_string + l[init_depth_loc+11: ]
-                lines[i+j] = new_string
-                break 
-    return lines
 
 def update_simulation_date_time(lines, i, new_datetime):
     """
@@ -24,19 +14,18 @@ def update_simulation_date_time(lines, i, new_datetime):
     lines[i+3] = re.sub(r'\d{2}:\d{2}:\d{2}', new_time, lines[i+3])
     return lines
 
-def update_process_model_file(inp_file, new_date_time, new_depths, new_flows):
+def update_process_model_file(inp_file, new_date_time, hs_file):
     with open(inp_file, 'r') as tmp_file:
         lines = tmp_file.readlines()
 
-    for i,l in enumerate(lines):
-        if l.startswith("START_DATE"):
-            new_lines = update_simulation_date_time(lines, i, new_date_time)
-        elif l.startswith("[JUNCTIONS]"):
-            new_lines  = update_depths_or_flows(lines, i, new_depths['junctions'], "InitDepth")
-        elif l.startswith("[STORAGE]"):
-            new_lines = update_depths_or_flows(lines, i, new_depths['storage'], "InitDepth")
-        elif l.startswith("[CONDUITS]"):
-            new_lines = update_depths_or_flows(lines, i, new_flows, "InitFlow")
+    # update date and times 
+    date_section_start, date_section_end = find_section(lines, "START_DATE")
+    new_lines = update_simulation_date_time(lines, date_section_start, new_date_time)
+
+    # update to use hotstart file
+    file_section_start, file_section_end = find_section(lines, "[FILES]")
+    new_hotstart_string = get_file_section_string(hs_file)
+    lines = update_section(lines, new_hotstart_string, file_section_start, file_section_end)
 
     new_date_time_string = new_date_time.strftime("%Y.%m.%d_%H.%M.%S")
     new_file_end = "{}.inp".format(new_date_time_string)
@@ -44,18 +33,40 @@ def update_process_model_file(inp_file, new_date_time, new_depths, new_flows):
     with open(new_file_name, 'w') as tmp_file:
         tmp_file.writelines(lines)
 
-def find_control_section(lines):
+def find_section(lines, section_name):
     # check if CONTROL section is in the input file
-    control_line = None
-    end_control_section = None
+    start_line = None
+    end_line = None
     for i, l in enumerate(lines):
-        if l.startswith("[CONTROLS]"):
-           control_line = i 
+        if l.startswith("{}".format(section_name)):
+           start_line = i 
            for j, ll in enumerate(lines[i+1:]):
                if ll.startswith("["):
-                   end_control_section = j + i
+                   end_line = j + i
                    break
-    return control_line, end_control_section
+    return start_line, end_line
+
+def update_section(lines, new_lines, old_section_start=None, old_section_end=None):
+    """
+    lines: list of strings; text of .inp file read into list of strings
+    new_lines: list of strings; list of strings for replacing old section
+    old_section_start: int; position of line where replacing should start (will append to end of 
+    file if 'None' and section end is 'None' passed as argument)
+    old_section_end: int; position of line where replacing should end
+
+    """
+    if  old_section_start and old_section_end:
+        del lines[old_section_start: old_section_end]
+    else:
+        old_section_start = len(lines)
+
+    lines[old_section_start: old_section_start] = new_lines
+    return lines 
+
+def get_file_section_string(hs_filename):
+    new_lines = ["[FILES] \n"]
+    new_lines.append('USE HOTSTART "{}"\n \n'.format(hs_filename))
+    return new_lines
 
 def get_control_rule_string(control_time_step, policies):
     new_lines = ["[CONTROLS] \n"]
@@ -72,6 +83,8 @@ def get_control_rule_string(control_time_step, policies):
             rule_number += 1
     return new_lines
 
+    
+
 def update_controls(inp_file, control_time_step, policies):
     """
     control_time_step: number; in seconds
@@ -81,17 +94,13 @@ def update_controls(inp_file, control_time_step, policies):
     with open(inp_file, 'r') as inpfile:
         lines = inpfile.readlines()
     
-    control_line, end_control_line = find_control_section(lines)
-    if control_line and end_control_line:
-        del lines[control_line: end_control_line]
-    else:
-        control_line = len(lines)
+    control_line, end_control_line = find_section(lines, "[CONTROLS]")
 
     control_rule_string = get_control_rule_string(control_time_step, policies)
-    lines[control_line: control_line] = control_rule_string
+    updated_lines = update_section(lines, control_rule_string, control_line, end_control_line)
     
     with open(inp_file, 'w') as inpfile:
-        inpfile.writelines(lines)
+        inpfile.writelines(updated_lines)
 
 def update_controls_with_resulting_policy(inp_file, control_time_step, policy_file):
     policy_df = pd.read_csv(policy_file)

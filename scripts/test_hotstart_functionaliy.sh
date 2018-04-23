@@ -1,4 +1,5 @@
 #!/bin/bash
+build_swmm.sh
 hsdir=../simple_model/hotstart_test/
 cd $hsdir
 
