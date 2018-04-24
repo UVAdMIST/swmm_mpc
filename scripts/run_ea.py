@@ -9,9 +9,9 @@ import random
 import os
 from shutil import copyfile
 import subprocess
-from update_process_model_input_file import update_controls
+from update_process_model_input_file import update_controls_and_hotstart, read_hs_filename
 from run_swmm_mpc import input_process_file_inp, input_process_file_base, control_time_step, \
-        control_str_id
+        control_str_id, input_file_dir
 
 FNULL = open(os.devnull, 'w')
 
@@ -19,16 +19,23 @@ def evaluate(individual):
     # make process model tmp file
     rand_string = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
     input_tmp_process_file_base = input_process_file_base + "_tmp" + rand_string
-    input_tmp_process_inp = input_tmp_process_file_base + ".inp"
-    input_tmp_process_rpt = input_tmp_process_file_base + ".rpt"
+    input_tmp_process_inp = os.path.join(input_file_dir, input_tmp_process_file_base + ".inp")
+    input_tmp_process_rpt = os.path.join(input_file_dir, input_tmp_process_file_base + ".rpt")
     copyfile(input_process_file_inp, input_tmp_process_inp)
+
+    # make copy of hs file
+    hs_filename = read_hs_filename(input_process_file_inp)
+    tmp_hs_file_name = hs_filename.replace(".hsf", "_tmp_{}.hsf".format(rand_string))
+    tmp_hs_file = os.path.join(input_file_dir, tmp_hs_file_name)
+    copyfile(os.path.join(input_file_dir, hs_filename), tmp_hs_file)
 
     # convert individual to percentages
     indivi_percentage = [setting/10. for setting in individual]
     policies = {control_str_id: indivi_percentage}
 
     # update controls
-    update_controls(input_tmp_process_inp, control_time_step, policies)
+    update_controls_and_hotstart(input_tmp_process_inp, control_time_step, policies, 
+            tmp_hs_file)
 
     # run the swmm model
     cmd = "swmm5 {0}.inp {0}.rpt".format(input_tmp_process_file_base)
@@ -53,6 +60,7 @@ def evaluate(individual):
     cost =  storage_flood_cost + node_flood_cost + deviation_cost
     os.remove(input_tmp_process_inp)
     os.remove(input_tmp_process_rpt)
+    os.remove(tmp_hs_file)
     return cost,
 
 creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
@@ -67,11 +75,10 @@ toolbox.register("mutate", tools.mutUniformInt, low=0, up=10, indpb=0.10)
 toolbox.register("select", tools.selTournament, tournsize=6)
 
 def run_ea(nsteps):
-    toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_int, 
-            nsteps)
+    toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_int, nsteps)
     toolbox.register('population', tools.initRepeat, list, toolbox.individual)
-    ngen = 5
-    nindividuals = 80
+    ngen = 7
+    nindividuals = 100
     pop = toolbox.population(n=nindividuals)
     hof = tools.HallOfFame(1)
     stats = tools.Statistics(lambda ind: ind.fitness.values)

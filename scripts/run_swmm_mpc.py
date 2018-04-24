@@ -70,9 +70,11 @@ def main():
             current_date_time = sim.current_time
 
             dt_hs_file = "{}.hsf".format(current_date_time.strftime("%Y%m%d%H%M"))
+            print current_date_time
             dt_hs_path = os.path.join(input_file_dir, dt_hs_file)
             sim.save_hotstart(dt_hs_path)
 
+            link_obj = Links(sim)
             orifice = link_obj["R1"]
 
             # update the process model with the current states

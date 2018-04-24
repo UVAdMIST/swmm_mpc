@@ -30,7 +30,7 @@ def update_process_model_file(inp_file, new_date_time, hs_file):
     new_date_time_string = new_date_time.strftime("%Y.%m.%d_%H.%M.%S")
     new_file_end = "{}.inp".format(new_date_time_string)
     new_file_name = inp_file.replace(".inp", new_file_end)
-    with open(new_file_name, 'w') as tmp_file:
+    with open(inp_file, 'w') as tmp_file:
         tmp_file.writelines(lines)
 
 def find_section(lines, section_name):
@@ -44,6 +44,8 @@ def find_section(lines, section_name):
                if ll.startswith("["):
                    end_line = j + i
                    break
+           if not end_line:
+               end_line = len(lines) 
     return start_line, end_line
 
 def update_section(lines, new_lines, old_section_start=None, old_section_end=None):
@@ -85,7 +87,7 @@ def get_control_rule_string(control_time_step, policies):
 
     
 
-def update_controls(inp_file, control_time_step, policies):
+def update_controls_and_hotstart(inp_file, control_time_step, policies, hs_file=None):
     """
     control_time_step: number; in seconds
     policies: dict; structure id (e.g., ORIFICE R1) as key, list of settings as value; 
@@ -99,6 +101,11 @@ def update_controls(inp_file, control_time_step, policies):
     control_rule_string = get_control_rule_string(control_time_step, policies)
     updated_lines = update_section(lines, control_rule_string, control_line, end_control_line)
     
+    if hs_file:
+        file_section_start, file_section_end = find_section(updated_lines, "[FILES]")
+        hs_lines = get_file_section_string(hs_file)
+        updated_lines = update_section(updated_lines, hs_lines, file_section_start, file_section_end)
+
     with open(inp_file, 'w') as inpfile:
         inpfile.writelines(updated_lines)
 
@@ -110,7 +117,11 @@ def update_controls_with_resulting_policy(inp_file, control_time_step, policy_fi
         structure_id = policy_col.split("_")[-1]
         policy_dict[structure_id] = policy_df[policy_col].tolist()
 
-    update_controls(inp_file, control_time_step, policy_dict)   
+    update_controls_and_hotstart(inp_file, control_time_step, policy_dict)   
     
-
-
+def read_hs_filename(inp_file):
+    with open(inp_file, 'r') as f:
+        for line in f:
+            if line.startswith("USE HOTSTART"):
+                hs_filename = line.split()[-1].replace('"', '')
+                return hs_filename
