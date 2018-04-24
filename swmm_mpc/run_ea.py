@@ -94,9 +94,6 @@ def run_ea(nsteps):
     f.write('run ended: {}\n'.format(end_time))
     f.close()
 
-    df = pd.DataFrame(logbook)
-    df.to_csv('../data/results_{}csv'.format(end_time, index=False))
-
     f = open('../data/hof.txt', 'a')
     for h in hof:
         f.write('hof for {}:{}    fitness:{}\n'.format(end_time, h, h.fitness))
