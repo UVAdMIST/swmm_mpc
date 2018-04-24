@@ -12,27 +12,27 @@ import os
 class swmm_mpc(object):
     def __init__(inp_file_path, pyswmm_lib, control_horizon, control_time_step, control_str_ids, 
             results_dir):
-    """
-    input_file_path:
-    pyswmm_lib:
-    control_horizon:
-    control_time_step:
-    control_str_ids:
-    results_dir:
-    """
-    self.inp_file_path = os.path.abspath(inp_file_path)
-    self.inp_file_dir, self.inp_file_name = os.path.split(self.inp_file_path)[0]
-    self.input_process_file_base = input_file.replace(".inp", "_process")
-    self.input_process_file_inp = input_process_file_base + ".inp"
-    copyfile(input_file, os.path.join(input_file_dir, input_process_file_inp))
+        """
+        input_file_path:
+        pyswmm_lib:
+        control_horizon:
+        control_time_step:
+        control_str_ids:
+        results_dir:
+        """
+        self.inp_file_path = os.path.abspath(inp_file_path)
+        self.inp_file_dir, self.inp_file_name = os.path.split(self.inp_file_path)[0]
+        self.input_process_file_base = input_file.replace(".inp", "_process")
+        self.input_process_file_inp = input_process_file_base + ".inp"
+        copyfile(input_file, os.path.join(input_file_dir, input_process_file_inp))
 
-    pyswmm.lib.use("/home/jeff/Documents/research/Sadler4th_paper/_build/lib/libswmm5.so")
+        pyswmm.lib.use("/home/jeff/Documents/research/Sadler4th_paper/_build/lib/libswmm5.so")
 
-    self.control_horizon = float(control_horizon) # hr
-    self.control_time_step = float(control_time_step) # sec
-    self.n_control_steps = int(control_horizon*3600/control_time_step)
-    self.control_str_name = control_str_name
-    self.control_str_id = control_str_name.split()
+        self.control_horizon = float(control_horizon) # hr
+        self.control_time_step = float(control_time_step) # sec
+        self.n_control_steps = int(control_horizon*3600/control_time_step)
+        self.control_str_name = control_str_name
+        self.control_str_id = control_str_name.split()
 
     def run_swmm_mpc(self):
         beg_time = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M")
@@ -76,3 +76,4 @@ class swmm_mpc(object):
 
         self.control_settings_df = pd.DataFrame(best_policy_ts)
         self.control_settings_df.to_csv("{}control_results_{}.csv".format(beg_time, results_dir))
+
