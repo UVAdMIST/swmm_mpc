@@ -15,7 +15,7 @@ setup(name='swmm_mpc',
           'scoop',
           'numpy',
           'deap',
-          ]
+          ],
       dependency_links=[
           'https://github.com/uva-hydroinformatics/pyswmm',
           ]
