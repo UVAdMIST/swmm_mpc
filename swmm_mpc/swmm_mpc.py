@@ -11,7 +11,7 @@ import os
 
 class swmm_mpc(object):
     def __init__(inp_file_path, pyswmm_lib, control_horizon, control_time_step, control_str_ids, 
-            results_dir)
+            results_dir):
     """
     input_file_path:
     pyswmm_lib:
