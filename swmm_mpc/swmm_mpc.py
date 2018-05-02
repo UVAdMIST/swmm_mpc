@@ -7,7 +7,7 @@ import os
 import datetime
 from deap import base, creator, tools, algorithms
 from scoop import futures
-from swmmio import swmmio
+from rpt_ele import rpt_ele
 from update_process_model_input_file import update_controls_and_hotstart, read_hs_filename, \
     update_process_model_file
 import pyswmm
@@ -18,26 +18,26 @@ import pandas as pd
 
 class swmm_mpc(object):
     def __init__(self, inp_file_path, pyswmm_lib, control_horizon, control_time_step, control_str_ids, results_dir):
-        """
+        '''
         inp_file_path:
         pyswmm_lib:
         control_horizon: [number] control horizon in hours
         control_time_step: [number] control time step in seconds
         control_str_ids:
         results_dir:
-        """
+        '''
         # full file path
         self.inp_file_path = os.path.abspath(inp_file_path)
         # the input directory and the file name
         self.inp_file_dir, self.inp_file_name = os.path.split(self.inp_file_path)
         # the process file name with no extension
-        self.inp_process_file_base = self.inp_file_name.replace(".inp", "_process")
+        self.inp_process_file_base = self.inp_file_name.replace('.inp', '_process')
         # the process .inp file name 
-        self.inp_process_file_inp = self.inp_process_file_base + ".inp"
+        self.inp_process_file_inp = self.inp_process_file_base + '.inp'
         # copy input file to process file name
         copyfile(self.inp_file_path, os.path.join(self.inp_file_dir, self.inp_process_file_inp))
 
-        pyswmm.lib.use("/home/jeff/Documents/research/Sadler4th_paper/_build/lib/libswmm5.so")
+        pyswmm.lib.use('/home/jeff/Documents/research/Sadler4th_paper/_build/lib/libswmm5.so')
 
         self.control_horizon = float(control_horizon) # hr
         self.control_time_step = float(control_time_step) # sec
@@ -46,7 +46,7 @@ class swmm_mpc(object):
         self.results_dir = results_dir
 
     def run_swmm_mpc(self):
-        beg_time = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M")
+        beg_time = datetime.datetime.now().strftime('%Y.%m.%d.%H.%M')
         start = time.time()
         best_policy_ts = []
         with Simulation(self.inp_file_path) as sim:
@@ -55,7 +55,7 @@ class swmm_mpc(object):
                 # get most current system states
                 current_date_time = sim.current_time
 
-                dt_hs_file = "{}.hsf".format(current_date_time.strftime("%Y%m%d%H%M"))
+                dt_hs_file = '{}.hsf'.format(current_date_time.strftime('%Y%m%d%H%M'))
                 print current_date_time
                 dt_hs_path = os.path.join(self.inp_file_dir, dt_hs_file)
                 sim.save_hotstart(dt_hs_path)
@@ -73,30 +73,30 @@ class swmm_mpc(object):
                     # # run prediction to get best policy 
                 best_policy = self.run_ea(self.n_control_steps)
                 best_policy_per = best_policy[0]/10.
-                best_policy_ts.append({"setting_{}".format(self.control_str_ids):best_policy_per, 
-                    "datetime":current_date_time})
+                best_policy_ts.append({'setting_{}'.format(self.control_str_ids):best_policy_per, 
+                    'datetime':current_date_time})
 
                 # implement best policy
 
                 end = time.time()
-                print ("elapsed time: {}".format(end-start))
+                print ('elapsed time: {}'.format(end-start))
 
         control_settings_df = pd.DataFrame(best_policy_ts)
-        control_settings_df.to_csv("{}control_results_{}.csv".format(beg_time, self.results_dir))
+        control_settings_df.to_csv('{}control_results_{}.csv'.format(beg_time, self.results_dir))
 
     def evaluate(self, individual):
         FNULL = open(os.devnull, 'w')
         # make process model tmp file
         rand_string = ''.join(random.choice(
             string.ascii_lowercase + string.digits) for _ in range(9))
-        inp_tmp_process_file_base = self.inp_process_file_base + "_tmp" + rand_string
-        inp_tmp_process_inp = os.path.join(self.inp_file_dir, inp_tmp_process_file_base + ".inp")
-        inp_tmp_process_rpt = os.path.join(self.inp_file_dir, inp_tmp_process_file_base + ".rpt")
+        inp_tmp_process_file_base = self.inp_process_file_base + '_tmp' + rand_string
+        inp_tmp_process_inp = os.path.join(self.inp_file_dir, inp_tmp_process_file_base + '.inp')
+        inp_tmp_process_rpt = os.path.join(self.inp_file_dir, inp_tmp_process_file_base + '.rpt')
         copyfile(self.inp_process_file_inp, inp_tmp_process_inp)
 
         # make copy of hs file
         hs_filename = read_hs_filename(self.inp_process_file_inp)
-        tmp_hs_file_name = hs_filename.replace(".hsf", "_tmp_{}.hsf".format(rand_string))
+        tmp_hs_file_name = hs_filename.replace('.hsf', '_tmp_{}.hsf'.format(rand_string))
         tmp_hs_file = os.path.join(self.inp_file_dir, tmp_hs_file_name)
         copyfile(os.path.join(self.inp_file_dir, hs_filename), tmp_hs_file)
 
@@ -109,26 +109,31 @@ class swmm_mpc(object):
                 tmp_hs_file)
 
         # run the swmm model
-        cmd = "swmm5 {0}.inp {0}.rpt".format(inp_tmp_process_file_base)
+        cmd = 'swmm5 {0}.inp {0}.rpt'.format(inp_tmp_process_file_base)
         subprocess.call(cmd, shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
 
         # read the output file
-        mymodel = swmmio.Model(inp_tmp_process_inp)
-        nodes = mymodel.nodes()
-        nodes.fillna(0, inplace=True)
-        storage_flood_volume = nodes.loc['St1']['TotalFloodVol']
-        storage_flood_cost = (100*storage_flood_volume)**3
-        node_flood_volume = nodes.loc['J3']['TotalFloodVol']
-        node_flood_cost = (100*node_flood_volume)*2 
+        rpt = rpt_ele('{}.rpt'.format(inp_tmp_process_file_base))
+        node_weights = {'St1': 100, 'J3': 10}
+        node_flood_costs = []
+
+        for nodeid, weight in node_weights:
+            try:
+                node_flood_volume = float(rpt.flooding_df.loc[nodeid, 5])
+                node_flood_cost = (weight*node_flood_volume)
+                node_flood_costs.append(node_flood_cost)
+            except KeyError:
+                print 'No flooding found for {}'.format(key)
+
         target_storage_level = 1.
-        avg_dev_fr_tgt_st_lvl = target_storage_level - nodes.loc['St1', 'AvgDepth']
+        avg_dev_fr_tgt_st_lvl = target_storage_level - float(rpt.depth_df.loc['St1', 2])
         if avg_dev_fr_tgt_st_lvl < 0:
             avg_dev_fr_tgt_st_lvl = 0
 
         deviation_cost = avg_dev_fr_tgt_st_lvl/10.
 
         # convert the contents of the output file into a cost
-        cost =  storage_flood_cost + node_flood_cost + deviation_cost
+        cost = sum(node_flood_costs) + deviation_cost
         os.remove(inp_tmp_process_inp)
         os.remove(inp_tmp_process_rpt)
         os.remove(tmp_hs_file)
@@ -141,14 +146,14 @@ class swmm_mpc(object):
         creator.create('Individual', list, fitness=creator.FitnessMin)
 
         toolbox = base.Toolbox()
-        toolbox.register("map", futures.map)
-        toolbox.register("attr_int", random.randint, 0, 10)
+        toolbox.register('map', futures.map)
+        toolbox.register('attr_int', random.randint, 0, 10)
         toolbox.register('evaluate', self.evaluate)
-        toolbox.register("mate", tools.cxTwoPoint)
-        toolbox.register("mutate", tools.mutUniformInt, low=0, up=10, indpb=0.10)
-        toolbox.register("select", tools.selTournament, tournsize=6)
+        toolbox.register('mate', tools.cxTwoPoint)
+        toolbox.register('mutate', tools.mutUniformInt, low=0, up=10, indpb=0.10)
+        toolbox.register('select', tools.selTournament, tournsize=6)
 
-        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_int, nsteps)
+        toolbox.register('individual', tools.initRepeat, creator.Individual, toolbox.attr_int, nsteps)
         toolbox.register('population', tools.initRepeat, list, toolbox.individual)
 
         ngen = 7
@@ -156,10 +161,10 @@ class swmm_mpc(object):
         pop = toolbox.population(n=nindividuals)
         hof = tools.HallOfFame(1)
         stats = tools.Statistics(lambda ind: ind.fitness.values)
-        stats.register("avg", np.mean)
-        stats.register("min", np.min)
-        stats.register("max", np.max)
-        beg_time = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M")
+        stats.register('avg', np.mean)
+        stats.register('min', np.min)
+        stats.register('max', np.max)
+        beg_time = datetime.datetime.now().strftime('%Y.%m.%d.%H.%M')
         pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=ngen, stats=stats,
                                            halloffame=hof, verbose=True)
 
