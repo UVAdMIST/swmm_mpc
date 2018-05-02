@@ -9,7 +9,8 @@ class rpt_ele():
         self.rpt = rpt_file
         self.file_contents = self.get_file_contents()
         self.total_flooding = self.get_total_flooding()
-        self.flooding_df = self.get_flooding_df()
+        self.flooding_df = self.get_summary_df("Node Flooding Summary") 
+        self.depth_df = self.get_summary_df("Node Depth Summary") 
 
     def get_file_contents(self):
         with open(self.rpt, 'r') as f:
@@ -46,7 +47,7 @@ class rpt_ele():
                 return i
 
         # raise error if start line of section not found
-        raise ValueError('Start line for string {} not found'.format(start_string))
+        raise KeyError('Start line for string {} not found'.format(start_string))
 
     def get_end_line(self, start_line):
         for i in range(len(self.file_contents[start_line:])):
@@ -55,7 +56,7 @@ class rpt_ele():
             self.file_contents[line_no + 1].strip() == "":
                 return line_no
         # raise error if end line of section not found
-        raise ValueError('Did not find end of section starting on line {}'.format(start_line))
+        raise KeyError('Did not find end of section starting on line {}'.format(start_line))
 
     def get_ele_lines(self, ele):
         start_line = self.get_start_line("<<< {} >>>".format(ele.lower()))
@@ -66,17 +67,18 @@ class rpt_ele():
         fl_start_line = self.get_start_line("Flooding Loss")
         return float(self.file_contents[fl_start_line].split()[-1])
 
-    def get_flooding_df(self):
+    def get_summary_df(self, heading):
         """
-        return a dataframe of the data under the "Node Flooding Summary" heading.
+        heading: heading of summary table (e.g, "Node Flooding Summary") 
+        returns: a dataframe of the tabular data under the heading specified
         """
-        fl_summary_start = self.get_start_line("Node Flooding Summary")
-        fl_summary_end = self.get_end_line(fl_summary_start)
-        fl_lines = self.file_contents[fl_summary_start:fl_summary_end]
+        summary_start = self.get_start_line(heading)
+        summary_end = self.get_end_line(summary_start)
+        lines = self.file_contents[summary_start:summary_end]
         # reverse the list of strings so data is on top. makes it easier to handle (less skipping)
-        fl_lines.reverse()
+        lines.reverse()
         first_row = True
-        for i, l in enumerate(fl_lines):
+        for i, l in enumerate(lines):
             if not l.strip().startswith('---'):
                 # add as row to dataframe
                 line = l.strip().split()
@@ -85,9 +87,6 @@ class rpt_ele():
                     first_row = False
                 df.loc[i] = line
             else:
+                df.set_index(0, inplace=True)
                 return df
-
-
-
-
     
