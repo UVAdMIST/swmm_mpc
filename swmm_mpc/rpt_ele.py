@@ -51,7 +51,8 @@ class rpt_ele():
     def get_end_line(self, start_line):
         for i in range(len(self.file_contents[start_line:])):
             line_no = start_line + i
-            if self.file_contents[line_no].strip() == "" and self.file_contents[line_no + 1].strip() == "":
+            if self.file_contents[line_no].strip() == "" and \
+            self.file_contents[line_no + 1].strip() == "":
                 return line_no
         # raise error if end line of section not found
         raise ValueError('Did not find end of section starting on line {}'.format(start_line))
