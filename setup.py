@@ -16,7 +16,7 @@ setup(name='swmm_mpc',
           'deap',
           ],
       dependency_links=[
-          'https://github.com/uva-hydroinformatics/pyswmm',
+          'git+git://github.com/uva-hydroinformatics/pyswmm.git@feature_save_hotstart#egg=pyswmm',
           ]
       )
 
