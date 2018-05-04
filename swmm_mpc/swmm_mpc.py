@@ -17,10 +17,9 @@ import pandas as pd
 
 
 class swmm_mpc(object):
-    def __init__(self, inp_file_path, pyswmm_lib, control_horizon, control_time_step, control_str_ids, results_dir):
+    def __init__(self, inp_file_path, control_horizon, control_time_step, control_str_ids, results_dir):
         '''
         inp_file_path:
-        pyswmm_lib:
         control_horizon: [number] control horizon in hours
         control_time_step: [number] control time step in seconds
         control_str_ids:
@@ -37,7 +36,7 @@ class swmm_mpc(object):
         # copy input file to process file name
         copyfile(self.inp_file_path, os.path.join(self.inp_file_dir, self.inp_process_file_inp))
 
-        pyswmm.lib.use('/home/jeff/Documents/research/Sadler4th_paper/_build/lib/libswmm5.so')
+        pyswmm.lib.use('libswmm5_hs.so')
 
         self.control_horizon = float(control_horizon) # hr
         self.control_time_step = float(control_time_step) # sec
@@ -117,13 +116,14 @@ class swmm_mpc(object):
         node_weights = {'St1': 100, 'J3': 10}
         node_flood_costs = []
 
-        for nodeid, weight in node_weights:
-            try:
-                node_flood_volume = float(rpt.flooding_df.loc[nodeid, 5])
-                node_flood_cost = (weight*node_flood_volume)
-                node_flood_costs.append(node_flood_cost)
-            except KeyError:
-                print 'No flooding found for {}'.format(key)
+        if not rpt.flooding_df.empty:
+            for nodeid, weight in node_weights.iteritems():
+                try:
+                    node_flood_volume = float(rpt.flooding_df.loc[nodeid, 5])
+                    node_flood_cost = (weight*node_flood_volume)
+                    node_flood_costs.append(node_flood_cost)
+                except:
+                    pass
 
         target_storage_level = 1.
         avg_dev_fr_tgt_st_lvl = target_storage_level - float(rpt.depth_df.loc['St1', 2])
@@ -168,5 +168,5 @@ class swmm_mpc(object):
         pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=ngen, stats=stats,
                                            halloffame=hof, verbose=True)
 
-        return hof[1]
+        return hof[0]
 

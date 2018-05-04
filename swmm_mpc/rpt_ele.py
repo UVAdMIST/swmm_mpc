@@ -1,5 +1,4 @@
 import pandas as pd
-import matplotlib.pyplot as plt
 
 class rpt_ele():
     def __init__(self, rpt_file):
@@ -9,7 +8,10 @@ class rpt_ele():
         self.rpt = rpt_file
         self.file_contents = self.get_file_contents()
         self.total_flooding = self.get_total_flooding()
-        self.flooding_df = self.get_summary_df("Node Flooding Summary") 
+        if self.total_flooding > 0:
+            self.flooding_df = self.get_summary_df("Node Flooding Summary") 
+        else:
+            self.flooding_df = pd.DataFrame()
         self.depth_df = self.get_summary_df("Node Depth Summary") 
 
     def get_file_contents(self):
