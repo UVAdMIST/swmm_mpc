@@ -44,6 +44,17 @@ class swmm_mpc(object):
         self.control_str_ids = control_str_ids
         self.results_dir = results_dir
 
+        creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
+        creator.create('Individual', list, fitness=creator.FitnessMin)
+
+        toolbox = base.Toolbox()
+        toolbox.register('map', futures.map)
+        toolbox.register('attr_int', random.randint, 0, 10)
+        toolbox.register('evaluate', self.evaluate)
+        toolbox.register('mate', tools.cxTwoPoint)
+        toolbox.register('mutate', tools.mutUniformInt, low=0, up=10, indpb=0.10)
+        toolbox.register('select', tools.selTournament, tournsize=6)
+
     def run_swmm_mpc(self):
         beg_time = datetime.datetime.now().strftime('%Y.%m.%d.%H.%M')
         start = time.time()
@@ -142,16 +153,6 @@ class swmm_mpc(object):
 
     def run_ea(self, nsteps):
         # initialize ea things
-        creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
-        creator.create('Individual', list, fitness=creator.FitnessMin)
-
-        toolbox = base.Toolbox()
-        toolbox.register('map', futures.map)
-        toolbox.register('attr_int', random.randint, 0, 10)
-        toolbox.register('evaluate', self.evaluate)
-        toolbox.register('mate', tools.cxTwoPoint)
-        toolbox.register('mutate', tools.mutUniformInt, low=0, up=10, indpb=0.10)
-        toolbox.register('select', tools.selTournament, tournsize=6)
 
         toolbox.register('individual', tools.initRepeat, creator.Individual, toolbox.attr_int, nsteps)
         toolbox.register('population', tools.initRepeat, list, toolbox.individual)
