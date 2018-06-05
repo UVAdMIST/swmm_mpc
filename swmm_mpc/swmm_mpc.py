@@ -20,11 +20,12 @@ class swmm_mpc(object):
     def __init__(self, inp_file_path, control_horizon, control_time_step, control_str_ids, 
             results_dir):
         '''
-        inp_file_path:
+        inp_file_path: [string] path to .inp file 
         control_horizon: [number] control horizon in hours
         control_time_step: [number] control time step in seconds
-        control_str_ids:
-        results_dir:
+        control_str_ids: [list of strings] ids of control structures for which controls policies 
+                         will be found
+        results_dir: [string] directory where the results will be written
         '''
         # full file path
         self.inp_file_path = os.path.abspath(inp_file_path)
