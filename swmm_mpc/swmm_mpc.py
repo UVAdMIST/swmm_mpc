@@ -79,13 +79,13 @@ class swmm_mpc(object):
 
                 # get num control steps remaining
                 # nsteps = get_nsteps_remaining(sim)
-                nsteps = self.n_control_steps
+                nsteps = self.n_control_steps * len(self.control_str_ids)
 
-                # if nsteps > 1:
-                    # # run prediction to get best policy 
                 best_policy = self.run_ea(self.n_control_steps)
-                best_policy_per = best_policy[0]/10.
-                best_policy_ts.append({'setting_{}'.format(self.control_str_ids):best_policy_per, 
+                best_policy_fmt = self.fmt_control_policies(best_policy_per)
+                for control_id, policy in best_policy_fmt.iteritems():
+                    best_policy_per = policy[0]/10.
+                    best_policy_ts.append({'setting_{}'.format(control_id):best_policy_per, 
                     'datetime':current_date_time})
 
                 # implement best policy
@@ -95,6 +95,12 @@ class swmm_mpc(object):
 
         control_settings_df = pd.DataFrame(best_policy_ts)
         control_settings_df.to_csv('{}control_results_{}.csv'.format(beg_time, self.results_dir))
+
+    def fmt_control_policies(self, control_array):
+        policies = dict()
+        for i, control_id in enumerate(self.control_str_ids):
+            policies[control_id] = control_array[i*self.n_control_steps: (i+1)*self.n_control_steps]
+        return policies
 
     def evaluate(self, individual):
         FNULL = open(os.devnull, 'w')
