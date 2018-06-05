@@ -127,7 +127,7 @@ class swmm_mpc(object):
 
         # convert individual to percentages
         indivi_percentage = [setting/10. for setting in individual]
-        policies = {self.control_str_ids: indivi_percentage}
+        policies = self.fmt_control_policies(indivi_percentage)
 
         # update controls
         update_controls_and_hotstart(inp_tmp_process_inp, self.control_time_step, policies, 
