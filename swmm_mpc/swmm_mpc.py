@@ -18,7 +18,7 @@ import pandas as pd
 
 class swmm_mpc(object):
     def __init__(self, inp_file_path, control_horizon, control_time_step, control_str_ids, 
-            results_dir):
+            results_dir, target_depth_dict=None, node_flood_weight_dict=None):
         '''
         inp_file_path: [string] path to .inp file 
         control_horizon: [number] control horizon in hours
@@ -26,6 +26,13 @@ class swmm_mpc(object):
         control_str_ids: [list of strings] ids of control structures for which controls policies 
                          will be found
         results_dir: [string] directory where the results will be written
+        target_depth_dict: [dict] dictionary where the keys are the nodeids and the values are a 
+                           dictionary. The inner dictionary has two keys, 'target', and 'weight'. 
+                           These values specify the target depth for the nodeid and the weight given 
+                           to that in the cost function. e.g., {'St1': {'target': 1, 'weight': 0.1}} 
+        node_flood_weight_dict: [dict] dictionary where the keys are the node ids and the values are 
+                                the relative weights for weighting the amount of flooding for a 
+                                particular node. e.g., {'st1': 10, 'J3': 1}
         '''
         # full file path
         self.inp_file_path = os.path.abspath(inp_file_path)
@@ -132,27 +139,30 @@ class swmm_mpc(object):
 
         # read the output file
         rpt = rpt_ele('{}.rpt'.format(inp_tmp_process_file_base))
-        node_weights = {'St1': 100, 'J3': 10}
         node_flood_costs = []
 
+        # get flooding costs
         if not rpt.flooding_df.empty:
-            for nodeid, weight in node_weights.iteritems():
+            for nodeid, weight in self.node_flood_weight_dict.iteritems():
+                # try/except used here in case there is no flooding for one or more of the nodes
                 try:
+                    # flood volume is in column, 5
                     node_flood_volume = float(rpt.flooding_df.loc[nodeid, 5])
                     node_flood_cost = (weight*node_flood_volume)
                     node_flood_costs.append(node_flood_cost)
                 except:
                     pass
 
-        target_storage_level = 1.
-        avg_dev_fr_tgt_st_lvl = target_storage_level - float(rpt.depth_df.loc['St1', 2])
-        if avg_dev_fr_tgt_st_lvl < 0:
-            avg_dev_fr_tgt_st_lvl = 0
-
-        deviation_cost = avg_dev_fr_tgt_st_lvl/10.
+        # get deviation costs
+        node_deviation_costs = []
+        if self.target_depth_dict:
+            for nodeid, data in self.target_depth_dict:
+                avg_dev_fr_tgt_st_lvl = abs(data['target'] - float(rpt.depth_df.loc[nodeid, 2]))
+                weighted_deviation = avg_dev_fr_tgt_st_lvl*data['weight']
+                node_deviation_costs.append(weighted_deviation)
 
         # convert the contents of the output file into a cost
-        cost = sum(node_flood_costs) + deviation_cost
+        cost = sum(node_flood_costs) + sum(node_deviation_costs)
         os.remove(inp_tmp_process_inp)
         os.remove(inp_tmp_process_rpt)
         os.remove(tmp_hs_file)
