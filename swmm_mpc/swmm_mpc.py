@@ -24,7 +24,7 @@ class swmm_mpc(object):
         control_horizon: [number] control horizon in hours
         control_time_step: [number] control time step in seconds
         control_str_ids: [list of strings] ids of control structures for which controls policies 
-                         will be found
+                         will be found. e.g., [ORIFICE R1, ORIFICE R2]
         results_dir: [string] directory where the results will be written
         target_depth_dict: [dict] dictionary where the keys are the nodeids and the values are a 
                            dictionary. The inner dictionary has two keys, 'target', and 'weight'. 
@@ -93,9 +93,12 @@ class swmm_mpc(object):
                 for control_id, policy in best_policy_fmt.iteritems():
                     best_policy_per = policy[0]/10.
                     best_policy_ts.append({'setting_{}'.format(control_id):best_policy_per, 
-                    'datetime':current_date_time})
-
-                # implement best policy
+                    'datetime':current_date_time}) 
+                    
+                    # implement best policy
+                    # from for example "ORIFICE R1" to "R1"
+                    control_id_short = control_id.split()[-1]
+                    link_obj[control_id_short].target_setting = best_bolicy_per
 
                 end = time.time()
                 print ('elapsed time: {}'.format(end-start))
