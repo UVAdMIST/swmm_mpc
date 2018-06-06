@@ -17,13 +17,22 @@ import pandas as pd
 
 
 class swmm_mpc(object):
-    def __init__(self, inp_file_path, control_horizon, control_time_step, control_str_ids, results_dir):
+    def __init__(self, inp_file_path, control_horizon, control_time_step, control_str_ids, 
+            results_dir, target_depth_dict=None, node_flood_weight_dict=None):
         '''
-        inp_file_path:
+        inp_file_path: [string] path to .inp file 
         control_horizon: [number] control horizon in hours
         control_time_step: [number] control time step in seconds
-        control_str_ids:
-        results_dir:
+        control_str_ids: [list of strings] ids of control structures for which controls policies 
+                         will be found
+        results_dir: [string] directory where the results will be written
+        target_depth_dict: [dict] dictionary where the keys are the nodeids and the values are a 
+                           dictionary. The inner dictionary has two keys, 'target', and 'weight'. 
+                           These values specify the target depth for the nodeid and the weight given 
+                           to that in the cost function. e.g., {'St1': {'target': 1, 'weight': 0.1}} 
+        node_flood_weight_dict: [dict] dictionary where the keys are the node ids and the values are 
+                                the relative weights for weighting the amount of flooding for a 
+                                particular node. e.g., {'st1': 10, 'J3': 1}
         '''
         # full file path
         self.inp_file_path = os.path.abspath(inp_file_path)
@@ -47,13 +56,13 @@ class swmm_mpc(object):
         creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
         creator.create('Individual', list, fitness=creator.FitnessMin)
 
-        toolbox = base.Toolbox()
-        toolbox.register('map', futures.map)
-        toolbox.register('attr_int', random.randint, 0, 10)
-        toolbox.register('evaluate', self.evaluate)
-        toolbox.register('mate', tools.cxTwoPoint)
-        toolbox.register('mutate', tools.mutUniformInt, low=0, up=10, indpb=0.10)
-        toolbox.register('select', tools.selTournament, tournsize=6)
+        self.toolbox = base.Toolbox()
+        self.toolbox.register('map', futures.map)
+        self.toolbox.register('attr_int', random.randint, 0, 10)
+        self.toolbox.register('evaluate', self.evaluate)
+        self.toolbox.register('mate', tools.cxTwoPoint)
+        self.toolbox.register('mutate', tools.mutUniformInt, low=0, up=10, indpb=0.10)
+        self.toolbox.register('select', tools.selTournament, tournsize=6)
 
     def run_swmm_mpc(self):
         beg_time = datetime.datetime.now().strftime('%Y.%m.%d.%H.%M')
@@ -77,13 +86,13 @@ class swmm_mpc(object):
 
                 # get num control steps remaining
                 # nsteps = get_nsteps_remaining(sim)
-                nsteps = self.n_control_steps
+                nsteps = self.n_control_steps * len(self.control_str_ids)
 
-                # if nsteps > 1:
-                    # # run prediction to get best policy 
                 best_policy = self.run_ea(self.n_control_steps)
-                best_policy_per = best_policy[0]/10.
-                best_policy_ts.append({'setting_{}'.format(self.control_str_ids):best_policy_per, 
+                best_policy_fmt = self.fmt_control_policies(best_policy_per)
+                for control_id, policy in best_policy_fmt.iteritems():
+                    best_policy_per = policy[0]/10.
+                    best_policy_ts.append({'setting_{}'.format(control_id):best_policy_per, 
                     'datetime':current_date_time})
 
                 # implement best policy
@@ -93,6 +102,12 @@ class swmm_mpc(object):
 
         control_settings_df = pd.DataFrame(best_policy_ts)
         control_settings_df.to_csv('{}control_results_{}.csv'.format(beg_time, self.results_dir))
+
+    def fmt_control_policies(self, control_array):
+        policies = dict()
+        for i, control_id in enumerate(self.control_str_ids):
+            policies[control_id] = control_array[i*self.n_control_steps: (i+1)*self.n_control_steps]
+        return policies
 
     def evaluate(self, individual):
         FNULL = open(os.devnull, 'w')
@@ -112,7 +127,7 @@ class swmm_mpc(object):
 
         # convert individual to percentages
         indivi_percentage = [setting/10. for setting in individual]
-        policies = {self.control_str_ids: indivi_percentage}
+        policies = self.fmt_control_policies(indivi_percentage)
 
         # update controls
         update_controls_and_hotstart(inp_tmp_process_inp, self.control_time_step, policies, 
@@ -124,27 +139,30 @@ class swmm_mpc(object):
 
         # read the output file
         rpt = rpt_ele('{}.rpt'.format(inp_tmp_process_file_base))
-        node_weights = {'St1': 100, 'J3': 10}
         node_flood_costs = []
 
+        # get flooding costs
         if not rpt.flooding_df.empty:
-            for nodeid, weight in node_weights.iteritems():
+            for nodeid, weight in self.node_flood_weight_dict.iteritems():
+                # try/except used here in case there is no flooding for one or more of the nodes
                 try:
+                    # flood volume is in column, 5
                     node_flood_volume = float(rpt.flooding_df.loc[nodeid, 5])
                     node_flood_cost = (weight*node_flood_volume)
                     node_flood_costs.append(node_flood_cost)
                 except:
                     pass
 
-        target_storage_level = 1.
-        avg_dev_fr_tgt_st_lvl = target_storage_level - float(rpt.depth_df.loc['St1', 2])
-        if avg_dev_fr_tgt_st_lvl < 0:
-            avg_dev_fr_tgt_st_lvl = 0
-
-        deviation_cost = avg_dev_fr_tgt_st_lvl/10.
+        # get deviation costs
+        node_deviation_costs = []
+        if self.target_depth_dict:
+            for nodeid, data in self.target_depth_dict:
+                avg_dev_fr_tgt_st_lvl = abs(data['target'] - float(rpt.depth_df.loc[nodeid, 2]))
+                weighted_deviation = avg_dev_fr_tgt_st_lvl*data['weight']
+                node_deviation_costs.append(weighted_deviation)
 
         # convert the contents of the output file into a cost
-        cost = sum(node_flood_costs) + deviation_cost
+        cost = sum(node_flood_costs) + sum(node_deviation_costs)
         os.remove(inp_tmp_process_inp)
         os.remove(inp_tmp_process_rpt)
         os.remove(tmp_hs_file)
@@ -154,20 +172,21 @@ class swmm_mpc(object):
     def run_ea(self, nsteps):
         # initialize ea things
 
-        toolbox.register('individual', tools.initRepeat, creator.Individual, toolbox.attr_int, nsteps)
-        toolbox.register('population', tools.initRepeat, list, toolbox.individual)
+        self.toolbox.register('individual', tools.initRepeat, creator.Individual, 
+                self.toolbox.attr_int, nsteps)
+        self.toolbox.register('population', tools.initRepeat, list, self.toolbox.individual)
 
         ngen = 7
         nindividuals = 100
-        pop = toolbox.population(n=nindividuals)
+        pop = self.toolbox.population(n=nindividuals)
         hof = tools.HallOfFame(1)
         stats = tools.Statistics(lambda ind: ind.fitness.values)
         stats.register('avg', np.mean)
         stats.register('min', np.min)
         stats.register('max', np.max)
         beg_time = datetime.datetime.now().strftime('%Y.%m.%d.%H.%M')
-        pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=ngen, stats=stats,
-                                           halloffame=hof, verbose=True)
+        pop, logbook = algorithms.eaSimple(pop, self.toolbox, cxpb=0.5, mutpb=0.2, ngen=ngen, 
+                                           stats=stats, halloffame=hof, verbose=True)
 
         return hof[0]
 
