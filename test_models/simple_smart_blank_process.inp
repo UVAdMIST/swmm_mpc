@@ -12,9 +12,9 @@ ALLOW_PONDING        NO
 SKIP_STEADY_STATE    NO
 
 START_DATE           02/06/2018
-START_TIME           15:45:24
+START_TIME           00:15:08
 REPORT_START_DATE    02/06/2018
-REPORT_START_TIME    15:45:24
+REPORT_START_TIME    00:15:08
 END_DATE             02/06/2018
 END_TIME             16:00:00
 SWEEP_START          01/01
@@ -39,7 +39,7 @@ MINIMUM_STEP         0.5
 THREADS              4
 
 [FILES] 
-USE HOTSTART "201802061545.hsf"
+USE HOTSTART "201802060015.hsf"
  
 
 [EVAPORATION]
@@ -108,7 +108,7 @@ R1               CIRCULAR     1                0          0          0
 [TIMESERIES]
 ;;Name           Date       Time       Value     
 ;;-------------- ---------- ---------- ----------
-rainfall         FILE "/home/jeff/Documents/research/Sadler4th_paper/swmm_models_and_scripts/data/simple_model_rainfall.csv"
+rainfall         FILE "/home/jeff/Documents/research/Sadler4th_paper/swmm_mpc/data/simple_model_rainfall.csv"
 
 [REPORT]
 ;;Reporting Options
@@ -158,3 +158,4 @@ Gage1            -1482.122          7427.912
 ;;Name           Links     
 ;;-------------- ----------
 "1               " C1 R1 C2 C3
+

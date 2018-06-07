@@ -18,7 +18,8 @@ import pandas as pd
 
 class swmm_mpc(object):
     def __init__(self, inp_file_path, control_horizon, control_time_step, control_str_ids, 
-            results_dir, target_depth_dict=None, node_flood_weight_dict=None):
+            results_dir, target_depth_dict=None, node_flood_weight_dict=None, ngen=7, 
+            nindividuals=100):
         '''
         inp_file_path: [string] path to .inp file 
         control_horizon: [number] control horizon in hours
@@ -33,6 +34,8 @@ class swmm_mpc(object):
         node_flood_weight_dict: [dict] dictionary where the keys are the node ids and the values are 
                                 the relative weights for weighting the amount of flooding for a 
                                 particular node. e.g., {'st1': 10, 'J3': 1}
+        ngen: [int] number of generations for GA
+        nindividuals: [int] number of individuals for initial generation in GA
         '''
         # full file path
         self.inp_file_path = os.path.abspath(inp_file_path)
@@ -52,6 +55,11 @@ class swmm_mpc(object):
         self.n_control_steps = int(control_horizon*3600/control_time_step)
         self.control_str_ids = control_str_ids
         self.results_dir = results_dir
+
+        self.target_depth_dict = target_depth_dict
+        self.node_flood_weight_dict = node_flood_weight_dict
+        self.ngen=ngen
+        self.nindividuals=nindividuals
 
         creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
         creator.create('Individual', list, fitness=creator.FitnessMin)
@@ -88,8 +96,8 @@ class swmm_mpc(object):
                 # nsteps = get_nsteps_remaining(sim)
                 nsteps = self.n_control_steps * len(self.control_str_ids)
 
-                best_policy = self.run_ea(self.n_control_steps)
-                best_policy_fmt = self.fmt_control_policies(best_policy_per)
+                best_policy = self.run_ea(nsteps)
+                best_policy_fmt = self.fmt_control_policies(best_policy)
                 for control_id, policy in best_policy_fmt.iteritems():
                     best_policy_per = policy[0]/10.
                     best_policy_ts.append({'setting_{}'.format(control_id):best_policy_per, 
@@ -98,7 +106,7 @@ class swmm_mpc(object):
                     # implement best policy
                     # from for example "ORIFICE R1" to "R1"
                     control_id_short = control_id.split()[-1]
-                    link_obj[control_id_short].target_setting = best_bolicy_per
+                    link_obj[control_id_short].target_setting = best_policy_per
 
                 end = time.time()
                 print ('elapsed time: {}'.format(end-start))
@@ -145,7 +153,7 @@ class swmm_mpc(object):
         node_flood_costs = []
 
         # get flooding costs
-        if not rpt.flooding_df.empty:
+        if not rpt.flooding_df.empty and self.node_flood_weight_dict:
             for nodeid, weight in self.node_flood_weight_dict.iteritems():
                 # try/except used here in case there is no flooding for one or more of the nodes
                 try:
@@ -155,11 +163,13 @@ class swmm_mpc(object):
                     node_flood_costs.append(node_flood_cost)
                 except:
                     pass
+        else:
+            node_flood_costs.append(rpt.total_flooding)
 
         # get deviation costs
         node_deviation_costs = []
         if self.target_depth_dict:
-            for nodeid, data in self.target_depth_dict:
+            for nodeid, data in self.target_depth_dict.iteritems():
                 avg_dev_fr_tgt_st_lvl = abs(data['target'] - float(rpt.depth_df.loc[nodeid, 2]))
                 weighted_deviation = avg_dev_fr_tgt_st_lvl*data['weight']
                 node_deviation_costs.append(weighted_deviation)
@@ -179,16 +189,14 @@ class swmm_mpc(object):
                 self.toolbox.attr_int, nsteps)
         self.toolbox.register('population', tools.initRepeat, list, self.toolbox.individual)
 
-        ngen = 7
-        nindividuals = 100
-        pop = self.toolbox.population(n=nindividuals)
+        pop = self.toolbox.population(n=self.nindividuals)
         hof = tools.HallOfFame(1)
         stats = tools.Statistics(lambda ind: ind.fitness.values)
         stats.register('avg', np.mean)
         stats.register('min', np.min)
         stats.register('max', np.max)
         beg_time = datetime.datetime.now().strftime('%Y.%m.%d.%H.%M')
-        pop, logbook = algorithms.eaSimple(pop, self.toolbox, cxpb=0.5, mutpb=0.2, ngen=ngen, 
+        pop, logbook = algorithms.eaSimple(pop, self.toolbox, cxpb=0.5, mutpb=0.2, ngen=self.ngen, 
                                            stats=stats, halloffame=hof, verbose=True)
 
         return hof[0]

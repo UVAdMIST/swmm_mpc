@@ -107,7 +107,7 @@ R1               CIRCULAR     1                0          0          0
 [TIMESERIES]
 ;;Name           Date       Time       Value     
 ;;-------------- ---------- ---------- ----------
-rainfall         FILE "/home/jeff/Documents/research/Sadler4th_paper/swmm_models_and_scripts/data/simple_model_rainfall.csv"
+rainfall         FILE "/home/jeff/Documents/research/Sadler4th_paper/swmm_mpc/data/simple_model_rainfall.csv"
 
 [REPORT]
 ;;Reporting Options
