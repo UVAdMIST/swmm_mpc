@@ -9,6 +9,16 @@ import update_process_model_input_file as up
 import run_ea
 
 
+inp_process_file_inp_g = ''
+inp_process_file_base_g = ''
+control_time_step_g = ''
+control_str_ids_g = ''
+inp_file_dir_g = ''
+n_control_steps_g = ''
+node_flood_weight_dict_g = ''
+target_depth_dict_g = ''
+
+
 def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                  control_str_ids, results_dir, target_depth_dict=None,
                  node_flood_weight_dict=None, ngen=7, nindividuals=100):
@@ -37,16 +47,36 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     inp_file_path = os.path.abspath(inp_file_path)
     # the input directory and the file name
     inp_file_dir, inp_file_name = os.path.split(inp_file_path)
+    global inp_file_dir_g
+    inp_file_dir_g = inp_file_dir
     # the process file name with no extension
     inp_process_file_base = inp_file_name.replace('.inp', '_process')
+    global inp_process_file_base_g
+    inp_process_file_base_g = inp_process_file_base
     # the process .inp file name
     inp_process_file_inp = inp_process_file_base + '.inp'
+    global inp_process_file_inp_g
+    inp_process_file_inp_g = inp_process_file_inp
     # copy input file to process file name
     copyfile(inp_file_path, os.path.join(inp_file_dir, inp_process_file_inp))
 
     pyswmm.lib.use('libswmm5_hs.so')
 
+    global control_time_step_g
+    control_time_step_g = control_time_step
+
+    global control_str_ids_g
+    control_str_ids_g = control_str_ids
+
     n_control_steps = int(control_horizon*3600/control_time_step)
+    global n_control_steps_g
+    n_control_steps_g = n_control_steps
+
+    global target_depth_dict_g
+    target_depth_dict_g = target_depth_dict
+
+    global node_flood_weight_dict_g
+    node_flood_weight_dict_g = node_flood_weight_dict
 
     beg_time = datetime.datetime.now().strftime('%Y.%m.%d.%H.%M')
     start = time.time()
