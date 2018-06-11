@@ -121,8 +121,8 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
             print('elapsed time: {}'.format(end-start))
 
     control_settings_df = pd.DataFrame(best_policy_ts)
-    control_settings_df.to_csv('{}control_results_{}.csv'.format(beg_time,
-                                                                 results_dir))
+    control_settings_df.to_csv('{}control_results_{}.csv'.format(results_dir,
+                                                                 beg_time))
 
 
 def fmt_control_policies(control_array, control_str_ids, n_control_steps):
