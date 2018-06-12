@@ -109,7 +109,7 @@ def update_controls_and_hotstart(inp_file, control_time_step, policies, hs_file=
     with open(inp_file, 'w') as inpfile:
         inpfile.writelines(updated_lines)
 
-def update_controls_with_resulting_policy(inp_file, control_time_step, policy_file):
+def update_controls_with_policy(inp_file, control_time_step, policy_file):
     policy_df = pd.read_csv(policy_file)
     policy_columns = [col for col in policy_df.columns if "setting" in col]
     policy_dict = {}

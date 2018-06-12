@@ -1,5 +1,5 @@
 from rpt_ele import rpt_ele
-from update_process_model_input_file import update_controls_with_resulting_policy
+from update_process_model_input_file import update_controls_with_policy
 import sys
 import matplotlib.pyplot as plt
 import subprocess
@@ -11,7 +11,7 @@ control_time_step = float(sys.argv[3])
 
 policy_id = policy_file.split("/")[-1].split("_")[-1]
 
-update_controls_with_resulting_policy(inp_file, control_time_step, policy_file)
+update_controls_with_policy(inp_file, control_time_step, policy_file)
 
 # run swmm
 rpt_file = inp_file.replace(".inp", ".rpt") 
