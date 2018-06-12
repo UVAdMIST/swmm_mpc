@@ -63,7 +63,7 @@ class rpt_ele():
     def get_ele_lines(self, ele):
         start_line = self.get_start_line("<<< {} >>>".format(ele.lower()))
         end_line = self.get_end_line(start_line)
-        return start, end
+        return start_line, end_line
 
     def get_total_flooding(self):
         fl_start_line = self.get_start_line("Flooding Loss")
