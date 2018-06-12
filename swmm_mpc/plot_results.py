@@ -18,19 +18,33 @@ rpt_file = inp_file.replace(".inp", ".rpt")
 cmd = "swmm5 {} {}".format(inp_file, rpt_file)
 subprocess.call(cmd, shell=True, stderr=subprocess.STDOUT)
 
-rpt_obj = rpt_ele(rpt_file, "NODE J3")
+rpt_obj = rpt_ele(rpt_file)
 variable = 'Depth'
-ax = rpt_obj.ele_df[variable].plot(label=variable+" (ft)")
+ax = rpt_obj.get_ele_df('NODE J3')[variable].plot(label=variable+" (ft)")
 variable = 'Flooding'
-ax = rpt_obj.ele_df[variable].plot(ax=ax, label=variable+" (million gallons)")
+ax = rpt_obj.get_ele_df('NODE J3')[variable].plot(label=variable+" (million gallons)")
 ax.set_title("NODE J3 results from {}".format(policy_id))
 ax.legend()
 plt.tight_layout()
 plt.show()
 
-rpt_obj = rpt_ele(rpt_file, "NODE ST1")
 variable = 'Depth'
-ax = rpt_obj.ele_df[variable].plot(label=variable+" (ft)")
+ax = rpt_obj.get_ele_df('NODE J2')[variable].plot(label=variable+" (ft)")
+variable = 'Flooding'
+ax = rpt_obj.get_ele_df('NODE J2')[variable].plot(label=variable+" (million gallons)")
+ax.set_title("NODE J3 results from {}".format(policy_id))
+ax.legend()
+plt.tight_layout()
+plt.show()
+
+variable = 'Depth'
+ax = rpt_obj.get_ele_df('NODE ST1')[variable].plot(label=variable+" (ft)")
 ax.set_title("NODE ST1 results from {}".format(policy_id))
+plt.tight_layout()
+plt.show()
+
+variable = 'Depth'
+ax = rpt_obj.get_ele_df('NODE ST2')[variable].plot(label=variable+" (ft)")
+ax.set_title("NODE ST2 results from {}".format(policy_id))
 plt.tight_layout()
 plt.show()
