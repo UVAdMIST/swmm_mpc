@@ -1,10 +1,10 @@
 from swmm_mpc.swmm_mpc import run_swmm_mpc
 
-inp_file = "simple_2_ctl.inp"
+inp_file = "../models/simple_2_ctl.inp"
 control_horizon = 3. #hr
 control_time_step = 900. #sec
 control_str_ids = ["ORIFICE R1", "ORIFICE R2"]
-results_dir = "~/Documents/research/results"
+results_dir = "~/Documents/research/"
 ngen = 7
 nindividuals = 50
 
