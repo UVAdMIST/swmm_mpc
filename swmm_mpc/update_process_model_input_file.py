@@ -118,6 +118,17 @@ def update_controls_with_resulting_policy(inp_file, control_time_step, policy_fi
         policy_dict[structure_id] = policy_df[policy_col].tolist()
 
     update_controls_and_hotstart(inp_file, control_time_step, policy_dict)   
+
+def remove_control_section(inp_file):
+    with open(inp_file, 'r') as inpfile:
+        lines = inpfile.readlines()
+
+    control_line, end_control_line = find_section(lines, "[CONTROLS]")
+    if control_line and end_control_line:
+        del lines[control_line: end_control_line]
+
+    with open(inp_file, 'w') as inpfile:
+        inpfile.writelines(lines)
     
 def read_hs_filename(inp_file):
     with open(inp_file, 'r') as f:
