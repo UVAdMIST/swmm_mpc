@@ -1,2 +1,4 @@
+*.hsf
+*.out
 *.swp
 *.pyc
