@@ -1,6 +1,6 @@
 from swmm_mpc.swmm_mpc import run_swmm_mpc
 
-inp_file = "../models/simple_2_ctl.inp"
+inp_file = "/home/jeff/Documents/research/Sadler4th_paper/swmm_mpc/test_models/models/simple_2_ctl.inp"
 control_horizon = 3. #hr
 control_time_step = 900. #sec
 control_str_ids = ["ORIFICE R1", "ORIFICE R2"]
