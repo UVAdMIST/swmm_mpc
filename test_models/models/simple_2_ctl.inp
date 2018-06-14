@@ -118,21 +118,21 @@ R2               CIRCULAR     1                0          0          0
 [TIMESERIES]
 ;;Name           Date       Time       Value     
 ;;-------------- ---------- ---------- ----------
-rainfall1                   0:00       0         
-rainfall1                   4:00       0.25      
-rainfall1                   5:00       0.5       
-rainfall1                   6:00       0.4       
-rainfall1                   7:00       0.25      
-rainfall1                   8:00       0.125     
-rainfall1                   9:00       0         
+rainfall1        02/06/2018 0:00       0         
+rainfall1        02/06/2018 4:00       0.25      
+rainfall1        02/06/2018 5:00       0.5       
+rainfall1        02/06/2018 6:00       0.4       
+rainfall1        02/06/2018 7:00       0.25      
+rainfall1        02/06/2018 8:00       0.125     
+rainfall1        02/06/2018 9:00       0         
 ;
-rainfall2                   0:00       0         
-rainfall2                   4:00       0         
-rainfall2                   5:00       0.25      
-rainfall2                   6:00       0.5       
-rainfall2                   7:00       0.4       
-rainfall2                   8:00       0.25      
-rainfall2                   9:00       0.125     
+rainfall2        02/06/2018 0:00       0         
+rainfall2        02/06/2018 4:00       0         
+rainfall2        02/06/2018 5:00       0.25      
+rainfall2        02/06/2018 6:00       0.5       
+rainfall2        02/06/2018 7:00       0.4       
+rainfall2        02/06/2018 8:00       0.25      
+rainfall2        02/06/2018 9:00       0.125     
 
 [REPORT]
 ;;Reporting Options
