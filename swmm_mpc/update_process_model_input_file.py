@@ -27,9 +27,6 @@ def update_process_model_file(inp_file, new_date_time, hs_file):
     new_hotstart_string = get_file_section_string(hs_file)
     lines = update_section(lines, new_hotstart_string, file_section_start, file_section_end)
 
-    new_date_time_string = new_date_time.strftime("%Y.%m.%d_%H.%M.%S")
-    new_file_end = "{}.inp".format(new_date_time_string)
-    new_file_name = inp_file.replace(".inp", new_file_end)
     with open(inp_file, 'w') as tmp_file:
         tmp_file.writelines(lines)
 
