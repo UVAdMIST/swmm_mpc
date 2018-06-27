@@ -1,4 +1,5 @@
 import string
+import sys
 import random
 import os
 from shutil import copyfile
@@ -66,7 +67,12 @@ def evaluate(individual):
                                     tmp_hs_file)
 
     # run the swmm model
-    cmd = 'swmm5 {} {}'.format(inp_tmp_process_inp, inp_tmp_process_rpt)
+    if os.name == 'nt':
+        swmm_exe_cmd = 'swmm5.exe')
+    elif sys.platform.startswith('linux'):
+        swmm_exe_cmd = 'swmm5'
+    cmd = '{} {} {}'.format(swmm_exe_cmd, inp_tmp_process_inp, 
+                            inp_tmp_process_rpt)
     subprocess.call(cmd, shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
 
     # read the output file
