@@ -20,12 +20,14 @@ def update_process_model_file(inp_file, new_date_time, hs_file):
 
     # update date and times 
     date_section_start, date_section_end = find_section(lines, "START_DATE")
-    new_lines = update_simulation_date_time(lines, date_section_start, new_date_time)
+    new_lines = update_simulation_date_time(lines, date_section_start, 
+                                            new_date_time)
 
     # update to use hotstart file
     file_section_start, file_section_end = find_section(lines, "[FILES]")
     new_hotstart_string = get_file_section_string(hs_file)
-    lines = update_section(lines, new_hotstart_string, file_section_start, file_section_end)
+    lines = update_section(lines, new_hotstart_string, file_section_start, 
+                           file_section_end)
 
     with open(inp_file, 'w') as tmp_file:
         tmp_file.writelines(lines)
@@ -45,12 +47,14 @@ def find_section(lines, section_name):
                end_line = len(lines) 
     return start_line, end_line
 
-def update_section(lines, new_lines, old_section_start=None, old_section_end=None):
+def update_section(lines, new_lines, old_section_start=None, 
+                   old_section_end=None):
     """
     lines: list of strings; text of .inp file read into list of strings
     new_lines: list of strings; list of strings for replacing old section
-    old_section_start: int; position of line where replacing should start (will append to end of 
-    file if 'None' and section end is 'None' passed as argument)
+    old_section_start: int; position of line where replacing should start 
+                       (will append to end of file if 'None' and section end 
+                       is 'None' passed as argument)
     old_section_end: int; position of line where replacing should end
 
     """
@@ -75,7 +79,8 @@ def get_control_rule_string(control_time_step, policies):
     for structure_id in policies:
         for i, policy_step in enumerate(policies[structure_id]):
             l1 = "RULE R{} \n".format(rule_number)
-            l2 = "IF SIMULATION TIME < {:.3f} \n".format((i+1) * control_time_step_hours)
+            l2 = "IF SIMULATION TIME < {:.3f} \n".format(
+                    (i+1) * control_time_step_hours)
             l3 = "THEN {} SETTING = {} \n".format(structure_id, policy_step) 
             l4 = "\n"
             new_lines.extend([l1, l2, l3, l4])
@@ -84,10 +89,12 @@ def get_control_rule_string(control_time_step, policies):
 
     
 
-def update_controls_and_hotstart(inp_file, control_time_step, policies, hs_file=None):
+def update_controls_and_hotstart(inp_file, control_time_step, policies, 
+        hs_file=None):
     """
     control_time_step: number; in seconds
-    policies: dict; structure id (e.g., ORIFICE R1) as key, list of settings as value; 
+    policies: dict; structure id (e.g., ORIFICE R1) as key, list of settings
+              as value; 
 
     """
     with open(inp_file, 'r') as inpfile:
@@ -96,12 +103,16 @@ def update_controls_and_hotstart(inp_file, control_time_step, policies, hs_file=
     control_line, end_control_line = find_section(lines, "[CONTROLS]")
 
     control_rule_string = get_control_rule_string(control_time_step, policies)
-    updated_lines = update_section(lines, control_rule_string, control_line, end_control_line)
+    updated_lines = update_section(lines, control_rule_string, control_line, 
+                                   end_control_line)
     
     if hs_file:
-        file_section_start, file_section_end = find_section(updated_lines, "[FILES]")
+        file_section_start, file_section_end = find_section(updated_lines,
+                                                            "[FILES]")
         hs_lines = get_file_section_string(hs_file)
-        updated_lines = update_section(updated_lines, hs_lines, file_section_start, file_section_end)
+        updated_lines = update_section(updated_lines, hs_lines, 
+                                       file_section_start, 
+                                       file_section_end)
 
     with open(inp_file, 'w') as inpfile:
         inpfile.writelines(updated_lines)

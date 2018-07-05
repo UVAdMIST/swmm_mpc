@@ -2,8 +2,6 @@ import time
 import os
 import datetime
 from shutil import copyfile
-from scoop import shared
-from scoop.fallbacks import NotStartedProperly
 import pandas as pd
 import pyswmm
 from pyswmm import Simulation, Links
@@ -11,19 +9,9 @@ import update_process_model_input_file as up
 import run_ea as ra
 
 
-inp_process_file_inp_g = ''
-inp_process_file_base_g = ''
-control_time_step_g = ''
-control_str_ids_g = ''
-inp_file_dir_g = ''
-n_control_steps_g = ''
-node_flood_weight_dict_g = ''
-target_depth_dict_g = ''
-
-
 def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                  control_str_ids, results_dir, target_depth_dict=None,
-                 node_flood_weight_dict=None, ngen=7, nindividuals=100, 
+                 node_flood_weight_dict=None, ngen=7, nindividuals=100,
                  verbose_results=False):
     '''
     inp_file_path: [string] path to .inp file
@@ -48,7 +36,6 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     '''
     # full file path
     # inp_file_path = os.path.abspath(inp_file_path)
-    print(inp_file_path)
     # the input directory and the file name
     inp_file_dir, inp_file_name = os.path.split(inp_file_path)
     # the process file name with no extension
@@ -62,36 +49,6 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     pyswmm.lib.use('libswmm5_hs.so')
 
     n_control_steps = int(control_horizon*3600/control_time_step)
-    # set global/shared variables
-    try:
-        shared.setConst(inp_file_dir=inp_file_dir)
-        shared.setConst(inp_process_file_base=inp_process_file_base)
-        shared.setConst(inp_process_file_path=inp_process_file_path)
-        shared.setConst(inp_process_file_inp=inp_process_file_inp)
-        shared.setConst(control_time_step=control_time_step)
-        shared.setConst(control_str_ids=control_str_ids)
-        shared.setConst(n_control_steps=n_control_steps)
-        shared.setConst(target_depth_dict=target_depth_dict)
-        shared.setConst(node_flood_weight_dict=node_flood_weight_dict)
-    except NotStartedProperly:
-        global inp_file_dir_g
-        inp_file_dir_g = inp_file_dir
-        global inp_process_file_path_g
-        inp_process_file_path_g = inp_process_file_path
-        global inp_process_file_base_g
-        inp_process_file_base_g = inp_process_file_base
-        global inp_process_file_inp_g
-        inp_process_file_inp_g = inp_process_file_inp
-        global control_time_step_g
-        control_time_step_g = control_time_step
-        global control_str_ids_g
-        control_str_ids_g = control_str_ids
-        global n_control_steps_g
-        n_control_steps_g = n_control_steps
-        global target_depth_dict_g
-        target_depth_dict_g = target_depth_dict
-        global node_flood_weight_dict_g
-        node_flood_weight_dict_g = node_flood_weight_dict
 
     # run simulation
     beg_time = datetime.datetime.now().strftime('%Y.%m.%d.%H.%M')
@@ -103,10 +60,11 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
             # get most current system states
             current_dt = sim.current_time
 
-            dt_hs_file = '{}.hsf'.format(current_dt.strftime('%Y%m%d%H%M'))
+            dt_hs_file = 'tmp_hsf.hsf'
             print(current_dt)
             dt_hs_path = os.path.join(inp_file_dir, dt_hs_file)
             sim.save_hotstart(dt_hs_path)
+            print(dt_hs_path)
 
             link_obj = Links(sim)
 
@@ -118,8 +76,19 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
             # nsteps = get_nsteps_remaining(sim)
             nsteps = n_control_steps * len(control_str_ids)
 
-            best_policy = ra.run_ea(nsteps, ngen, nindividuals, verbose_results,
-                                    results_dir)
+            best_policy = ra.run_ea(nsteps,
+                                    ngen,
+                                    nindividuals,
+                                    verbose_results,
+                                    results_dir,
+                                    dt_hs_path,
+                                    inp_process_file_path,
+                                    control_time_step,
+                                    n_control_steps,
+                                    control_str_ids,
+                                    target_depth_dict,
+                                    node_flood_weight_dict)
+
             best_policy_fmt = fmt_control_policies(best_policy,
                                                    control_str_ids,
                                                    n_control_steps)
