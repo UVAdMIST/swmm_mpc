@@ -9,7 +9,7 @@ import evaluate as ev
 creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
 creator.create('Individual', list, fitness=creator.FitnessMin)
 
-pool = multiprocessing.Pool(os.environ['OMP_NUM_THREADS'])
+pool = multiprocessing.Pool(16)
 toolbox = base.Toolbox()
 toolbox.register('map', pool.map)
 toolbox.register('attr_int', random.randint, 0, 10)
@@ -24,7 +24,7 @@ def run_ea(nsteps, ngen, nindividuals, verbose_results, data_dir, hs_file_path,
     toolbox.register('evaluate',
                      ev.evaluate,
                      hs_file_path=hs_file_path,
-                     inp_process_file_path=inp_process_file_path,
+                     process_file_path=inp_process_file_path,
                      control_time_step=control_time_step,
                      n_control_steps=n_control_steps,
                      control_str_ids=control_str_ids,

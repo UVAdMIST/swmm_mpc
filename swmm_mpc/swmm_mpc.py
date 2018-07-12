@@ -10,9 +10,9 @@ import run_ea as ra
 
 
 def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
-                 control_str_ids, results_dir, target_depth_dict=None,
-                 node_flood_weight_dict=None, ngen=7, nindividuals=100,
-                 verbose_results=False):
+                 control_str_ids, work_dir, results_dir,
+		 target_depth_dict=None, node_flood_weight_dict=None, ngen=7,
+		 nindividuals=100, verbose_results=False):
     '''
     inp_file_path: [string] path to .inp file
     control_horizon: [number] control horizon in hours
@@ -20,6 +20,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     control_str_ids: [list of strings] ids of control structures for which
                      controls policies will be found.
                      e.g., [ORIFICE R1, ORIFICE R2]
+    work_dir: [string] directory where the temporary files will be created
     results_dir: [string] directory where the results will be written
     target_depth_dict: [dict] dictionary where the keys are the nodeids and
                        the values are a dictionary. The inner dictionary has
@@ -33,6 +34,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                             e.g., {'st1': 10, 'J3': 1}
     ngen: [int] number of generations for GA
     nindividuals: [int] number of individuals for initial generation in GA
+    verbose_results: [bool] whether or not verbose results should be saved
     '''
     # full file path
     # inp_file_path = os.path.abspath(inp_file_path)
@@ -42,7 +44,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     inp_process_file_base = inp_file_name.replace('.inp', '_process')
     # the process .inp file name
     inp_process_file_inp = inp_process_file_base + '.inp'
-    inp_process_file_path = os.path.join('/tmp/', inp_process_file_inp)
+    inp_process_file_path = os.path.join(work_dir, inp_process_file_inp)
     # copy input file to process file name
     copyfile(inp_file_path, inp_process_file_path)
 
@@ -51,8 +53,9 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     n_control_steps = int(control_horizon*3600/control_time_step)
 
     # run simulation
-    beg_time = datetime.datetime.now().strftime('%Y.%m.%d.%H.%M')
-    start = time.time()
+    beg_time = datetime.datetime.now()
+    beg_time_str = beg_time.strftime('%Y.%m.%d.%H.%M')
+    print "Simulation start: {}".format(beg_time_str)
     best_policy_ts = []
     with Simulation(inp_file_path) as sim:
         sim.step_advance(control_time_step)
@@ -64,13 +67,12 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
             print(current_dt)
             dt_hs_path = os.path.join(inp_file_dir, dt_hs_file)
             sim.save_hotstart(dt_hs_path)
-            print(dt_hs_path)
 
             link_obj = Links(sim)
 
             # update the process model with the current states
             up.update_process_model_file(inp_process_file_path,
-                                         current_dt, dt_hs_file)
+                                         current_dt, dt_hs_path)
 
             # get num control steps remaining
             # nsteps = get_nsteps_remaining(sim)
@@ -103,12 +105,14 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                 control_id_short = control_id.split()[-1]
                 link_obj[control_id_short].target_setting = best_policy_per
 
-            end = time.time()
-            print('elapsed time: {}'.format(end-start))
+    end_time = datetime.datetime.now()
+    print('simulation end: {}'.format(end_time.strftime('%Y.%m.%d.%H.%M')))
+    elapsed_time = end_time - beg_time
+    print('elapsed time: {}'.format(elapsed_time.seconds))
 
     control_settings_df = pd.DataFrame(best_policy_ts)
     control_settings_df.to_csv('{}control_results_{}.csv'.format(results_dir,
-                                                                 beg_time))
+                                                                 beg_time_str))
 
 
 def fmt_control_policies(control_array, control_str_ids, n_control_steps):
