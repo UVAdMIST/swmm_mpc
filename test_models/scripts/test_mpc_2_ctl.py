@@ -1,10 +1,11 @@
 from swmm_mpc.swmm_mpc import run_swmm_mpc
 
-inp_file = "/home/jeff/Documents/research/Sadler4th_paper/swmm_mpc/test_models/models/simple_2_ctl.inp"
-control_horizon = 3. #hr
-control_time_step = 900. #sec
+inp_file = "/home/jms3fb/research/sadler4/swmm_mpc/test_models/models/simple_2_ctl.inp"
+control_horizon = 1. #hr
+control_time_step = 300. #sec
 control_str_ids = ["ORIFICE R1", "ORIFICE R2"]
-results_dir = "~/Documents/research/"
+results_dir = "/home/jms3fb/research/results/"
+work_dir = "/home/jms3fb/research/work/"
 ngen = 7
 nindividuals = 50
 
@@ -17,6 +18,7 @@ def main():
                  control_horizon,
                  control_time_step,
                  control_str_ids,
+		 work_dir, 
                  results_dir,
                  # target_depth_dict=target_depth_dict,
                  ngen=ngen,
