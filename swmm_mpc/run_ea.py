@@ -1,4 +1,5 @@
 import random
+import os
 import multiprocessing
 from deap import base, creator, tools, algorithms
 import numpy as np
@@ -8,7 +9,7 @@ import evaluate as ev
 creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
 creator.create('Individual', list, fitness=creator.FitnessMin)
 
-pool = multiprocessing.Pool()
+pool = multiprocessing.Pool(os.environ['OMP_NUM_THREADS'])
 toolbox = base.Toolbox()
 toolbox.register('map', pool.map)
 toolbox.register('attr_int', random.randint, 0, 10)
