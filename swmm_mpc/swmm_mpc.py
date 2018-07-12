@@ -111,6 +111,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     print('elapsed time: {}'.format(elapsed_time.seconds))
 
     control_settings_df = pd.DataFrame(best_policy_ts)
+    control_settings_df = control_settings_df.pivot_table(index='datetime')
     control_settings_df.to_csv('{}control_results_{}.csv'.format(results_dir,
                                                                  beg_time_str))
 
