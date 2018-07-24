@@ -9,7 +9,7 @@ import update_process_model_input_file as up
 import swmm_mpc as sm
 
 
-def evaluate(individual, hs_file_path, inp_process_file_path,
+def evaluate(individual, hs_file_path, process_file_path,
              control_time_step, n_control_steps, control_str_ids,
              node_flood_weight_dict, target_depth_dict):
     FNULL = open(os.devnull, 'w')
@@ -18,22 +18,22 @@ def evaluate(individual, hs_file_path, inp_process_file_path,
         string.ascii_lowercase + string.digits) for _ in range(9))
 
     # make a copy of the process model input file
-    inp_process_file_name = os.path.split(inp_process_file_path)[1]
-    inp_tmp_process_file_base = inp_process_file_name.replace('.inp',
+    process_file_dir, process_file_name = os.path.split(process_file_path)
+    tmp_process_file_base = process_file_name.replace('.inp',
                                                               '_tmp_' +
                                                               rand_string)
-    inp_tmp_process_inp = os.path.join('/tmp/',
-                                       inp_tmp_process_file_base + '.inp')
-    inp_tmp_process_rpt = os.path.join('/tmp/',
-                                       inp_tmp_process_file_base + '.rpt')
-    copyfile(inp_process_file_path, inp_tmp_process_inp)
+    tmp_process_inp = os.path.join(process_file_dir,
+                                       tmp_process_file_base + '.inp')
+    tmp_process_rpt = os.path.join(process_file_dir,
+                                       tmp_process_file_base + '.rpt')
+    copyfile(process_file_path, tmp_process_inp)
 
     # make copy of hs file
     hs_file_name = os.path.split(hs_file_path)[1]
     tmp_hs_file_name = hs_file_name.replace('.hsf',
                                             '_{}.hsf'.format(rand_string))
 
-    tmp_hs_file = os.path.join('/tmp/', tmp_hs_file_name)
+    tmp_hs_file = os.path.join(process_file_dir, tmp_hs_file_name)
     copyfile(hs_file_path, tmp_hs_file)
 
     # convert individual to percentages
@@ -44,7 +44,7 @@ def evaluate(individual, hs_file_path, inp_process_file_path,
                                                        (i+1)*n_control_steps]
 
     # update controls
-    up.update_controls_and_hotstart(inp_tmp_process_inp,
+    up.update_controls_and_hotstart(tmp_process_inp,
                                     control_time_step,
                                     fmted_policies,
                                     tmp_hs_file)
@@ -54,12 +54,12 @@ def evaluate(individual, hs_file_path, inp_process_file_path,
         swmm_exe_cmd = 'swmm5.exe'
     elif sys.platform.startswith('linux'):
         swmm_exe_cmd = 'swmm5'
-    cmd = '{} {} {}'.format(swmm_exe_cmd, inp_tmp_process_inp,
-                            inp_tmp_process_rpt)
+    cmd = '{} {} {}'.format(swmm_exe_cmd, tmp_process_inp,
+                            tmp_process_rpt)
     subprocess.call(cmd, shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
 
     # read the output file
-    rpt = rpt_ele('{}'.format(inp_tmp_process_rpt))
+    rpt = rpt_ele('{}'.format(tmp_process_rpt))
     node_flood_costs = []
 
     # get flooding costs
@@ -87,7 +87,7 @@ def evaluate(individual, hs_file_path, inp_process_file_path,
 
     # convert the contents of the output file into a cost
     cost = sum(node_flood_costs) + sum(node_deviation_costs)
-    os.remove(inp_tmp_process_inp)
-    os.remove(inp_tmp_process_rpt)
+    os.remove(tmp_process_inp)
+    os.remove(tmp_process_rpt)
     os.remove(tmp_hs_file)
     return cost,
