@@ -6,12 +6,12 @@ from shutil import copyfile
 import subprocess
 from rpt_ele import rpt_ele
 import update_process_model_input_file as up
-import swmm_mpc as sm
 
 
 def evaluate(individual, hs_file_path, process_file_path,
              control_time_step, n_control_steps, control_str_ids,
-             node_flood_weight_dict, target_depth_dict):
+             node_flood_weight_dict, target_depth_dict, flood_weight,
+             dev_weight):
     FNULL = open(os.devnull, 'w')
     # make process model tmp file
     rand_string = ''.join(random.choice(
@@ -20,12 +20,12 @@ def evaluate(individual, hs_file_path, process_file_path,
     # make a copy of the process model input file
     process_file_dir, process_file_name = os.path.split(process_file_path)
     tmp_process_file_base = process_file_name.replace('.inp',
-                                                              '_tmp_' +
-                                                              rand_string)
+                                                      '_tmp_' +
+                                                      rand_string)
     tmp_process_inp = os.path.join(process_file_dir,
-                                       tmp_process_file_base + '.inp')
+                                   tmp_process_file_base + '.inp')
     tmp_process_rpt = os.path.join(process_file_dir,
-                                       tmp_process_file_base + '.rpt')
+                                   tmp_process_file_base + '.rpt')
     copyfile(process_file_path, tmp_process_inp)
 
     # make copy of hs file
@@ -86,7 +86,8 @@ def evaluate(individual, hs_file_path, process_file_path,
             node_deviation_costs.append(weighted_deviation)
 
     # convert the contents of the output file into a cost
-    cost = sum(node_flood_costs) + sum(node_deviation_costs)
+    cost = flood_weight*sum(node_flood_costs) +\
+        dev_weight*sum(node_deviation_costs)
     os.remove(tmp_process_inp)
     os.remove(tmp_process_rpt)
     os.remove(tmp_hs_file)

@@ -1,4 +1,3 @@
-import time
 import os
 import datetime
 from shutil import copyfile
@@ -11,8 +10,9 @@ import run_ea as ra
 
 def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                  control_str_ids, work_dir, results_dir,
-		 target_depth_dict=None, node_flood_weight_dict=None, ngen=7,
-		 nindividuals=100, verbose_results=False):
+                 target_depth_dict=None, node_flood_weight_dict=None,
+                 flood_weight=1, dev_weight=1, ngen=7, nindividuals=100,
+                 verbose_results=False):
     '''
     inp_file_path: [string] path to .inp file
     control_horizon: [number] control horizon in hours
@@ -55,7 +55,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     # run simulation
     beg_time = datetime.datetime.now()
     beg_time_str = beg_time.strftime('%Y.%m.%d.%H.%M')
-    print "Simulation start: {}".format(beg_time_str)
+    print("Simulation start: {}".format(beg_time_str))
     best_policy_ts = []
     with Simulation(inp_file_path) as sim:
         sim.step_advance(control_time_step)
@@ -89,7 +89,10 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                                     n_control_steps,
                                     control_str_ids,
                                     target_depth_dict,
-                                    node_flood_weight_dict)
+                                    node_flood_weight_dict,
+                                    flood_weight,
+                                    dev_weight
+                                    )
 
             best_policy_fmt = fmt_control_policies(best_policy,
                                                    control_str_ids,

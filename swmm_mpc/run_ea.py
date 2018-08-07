@@ -1,5 +1,4 @@
 import random
-import os
 import multiprocessing
 from deap import base, creator, tools, algorithms
 import numpy as np
@@ -20,7 +19,8 @@ toolbox.register('select', tools.selTournament, tournsize=6)
 
 def run_ea(nsteps, ngen, nindividuals, verbose_results, data_dir, hs_file_path,
            inp_process_file_path, control_time_step, n_control_steps,
-           control_str_ids, node_flood_weight_dict, target_depth_dict):
+           control_str_ids, node_flood_weight_dict, target_depth_dict,
+           flood_weight, dev_weight):
     toolbox.register('evaluate',
                      ev.evaluate,
                      hs_file_path=hs_file_path,
@@ -29,7 +29,9 @@ def run_ea(nsteps, ngen, nindividuals, verbose_results, data_dir, hs_file_path,
                      n_control_steps=n_control_steps,
                      control_str_ids=control_str_ids,
                      node_flood_weight_dict=node_flood_weight_dict,
-                     target_depth_dict=target_depth_dict
+                     target_depth_dict=target_depth_dict,
+                     flood_weight=flood_weight,
+                     dev_weight=dev_weight
                      )
     toolbox.register('individual', tools.initRepeat, creator.Individual,
                      toolbox.attr_int, nsteps)
