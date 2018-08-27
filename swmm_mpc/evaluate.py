@@ -8,6 +8,39 @@ from rpt_ele import rpt_ele
 import update_process_model_input_file as up
 
 
+def get_flood_cost(rpt, node_flood_weight_dict):
+    node_flood_costs = []
+
+    if not rpt.flooding_df.empty and node_flood_weight_dict:
+        for nodeid, weight in node_flood_weight_dict.iteritems():
+            # try/except used here in case there is no flooding for one or
+            # more of the nodes
+            try:
+                # flood volume is in column, 5
+                node_flood_volume = float(rpt.flooding_df.loc[nodeid, 5])
+                node_flood_cost = (weight*node_flood_volume)
+                node_flood_costs.append(node_flood_cost)
+            except:
+                pass
+    else:
+        node_flood_costs.append(rpt.total_flooding)
+
+    return sum(node_flood_costs)
+
+
+def get_deviation_cost(rpt, target_depth_dict):
+    node_deviation_costs = []
+    if target_depth_dict:
+        for nodeid, data in target_depth_dict.iteritems():
+            depth = rpt.get_ele_df(nodeid)['Depth']
+            depth_dev = abs(depth - data['target'])
+            avg_dev = depth_dev.sum()/len(depth_dev)
+            weighted_deviation = avg_dev*data['weight']
+            node_deviation_costs.append(weighted_deviation)
+
+    return sum(node_deviation_costs)
+
+
 def evaluate(individual, hs_file_path, process_file_path, sim_dt,
              control_time_step, n_control_steps, control_str_ids,
              node_flood_weight_dict, target_depth_dict, flood_weight,
@@ -62,34 +95,15 @@ def evaluate(individual, hs_file_path, process_file_path, sim_dt,
 
     # read the output file
     rpt = rpt_ele('{}'.format(tmp_process_rpt))
-    node_flood_costs = []
 
     # get flooding costs
-    if not rpt.flooding_df.empty and node_flood_weight_dict:
-        for nodeid, weight in node_flood_weight_dict.iteritems():
-            # try/except used here in case there is no flooding for one or
-            # more of the nodes
-            try:
-                # flood volume is in column, 5
-                node_flood_volume = float(rpt.flooding_df.loc[nodeid, 5])
-                node_flood_cost = (weight*node_flood_volume)
-                node_flood_costs.append(node_flood_cost)
-            except:
-                pass
-    else:
-        node_flood_costs.append(rpt.total_flooding)
+    node_flood_cost = get_flood_cost(rpt, node_flood_weight_dict)
 
     # get deviation costs
-    node_deviation_costs = []
-    if target_depth_dict:
-        for nodeid, data in target_depth_dict.iteritems():
-            avg_dev = abs(data['target'] - float(rpt.depth_df.loc[nodeid, 2]))
-            weighted_deviation = avg_dev*data['weight']
-            node_deviation_costs.append(weighted_deviation)
+    deviation_cost = get_deviation_cost(rpt, target_depth_dict)
 
     # convert the contents of the output file into a cost
-    cost = flood_weight*sum(node_flood_costs) +\
-        dev_weight*sum(node_deviation_costs)
+    cost = flood_weight*node_flood_cost + dev_weight*deviation_costs
     os.remove(tmp_process_inp)
     os.remove(tmp_process_rpt)
     os.remove(tmp_hs_file)
