@@ -103,7 +103,7 @@ def evaluate(individual, hs_file_path, process_file_path, sim_dt,
     deviation_cost = get_deviation_cost(rpt, target_depth_dict)
 
     # convert the contents of the output file into a cost
-    cost = flood_weight*node_flood_cost + dev_weight*deviation_costs
+    cost = flood_weight*node_flood_cost + dev_weight*deviation_cost
     os.remove(tmp_process_inp)
     os.remove(tmp_process_rpt)
     os.remove(tmp_hs_file)

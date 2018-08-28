@@ -18,13 +18,14 @@ toolbox.register('select', tools.selTournament, tournsize=6)
 
 
 def run_ea(nsteps, ngen, nindividuals, verbose_results, data_dir, hs_file_path,
-           inp_process_file_path, control_time_step, n_control_steps,
-           control_str_ids, node_flood_weight_dict, target_depth_dict,
+           inp_process_file_path, sim_dt, control_time_step, n_control_steps,
+           control_str_ids, target_depth_dict, node_flood_weight_dict,
            flood_weight, dev_weight):
     toolbox.register('evaluate',
                      ev.evaluate,
                      hs_file_path=hs_file_path,
                      process_file_path=inp_process_file_path,
+		     sim_dt=sim_dt,
                      control_time_step=control_time_step,
                      n_control_steps=n_control_steps,
                      control_str_ids=control_str_ids,

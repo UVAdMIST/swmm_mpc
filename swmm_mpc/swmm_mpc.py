@@ -36,6 +36,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     nindividuals: [int] number of individuals for initial generation in GA
     verbose_results: [bool] whether or not verbose results should be saved
     '''
+    print(locals())
     # full file path
     # inp_file_path = os.path.abspath(inp_file_path)
     # the input directory and the file name
@@ -62,6 +63,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
         for step in sim:
             # get most current system states
             current_dt = sim.current_time
+	    current_dt_str = current_dt.strftime('%Y.%m.%d.%H.%M')
 
             dt_hs_file = 'tmp_hsf.hsf'
             print(current_dt)
@@ -85,6 +87,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                                     results_dir,
                                     dt_hs_path,
                                     inp_process_file_path,
+				    current_dt_str,
                                     control_time_step,
                                     n_control_steps,
                                     control_str_ids,
