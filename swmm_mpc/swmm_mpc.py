@@ -12,7 +12,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                  control_str_ids, work_dir, results_dir,
                  target_depth_dict=None, node_flood_weight_dict=None,
                  flood_weight=1, dev_weight=1, ngen=7, nindividuals=100,
-                 verbose_results=False):
+                 verbose_results=False, run_suffix=''):
     '''
     inp_file_path: [string] path to .inp file
     control_horizon: [number] control horizon in hours
@@ -35,6 +35,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     ngen: [int] number of generations for GA
     nindividuals: [int] number of individuals for initial generation in GA
     verbose_results: [bool] whether or not verbose results should be saved
+    run_suffix: [string] will be added to the results filename
     '''
     print(locals())
     # full file path
@@ -116,10 +117,12 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     elapsed_time = end_time - beg_time
     print('elapsed time: {}'.format(elapsed_time.seconds))
 
-    control_settings_df = pd.DataFrame(best_policy_ts)
-    control_settings_df = control_settings_df.pivot_table(index='datetime')
-    control_settings_df.to_csv('{}control_results_{}.csv'.format(results_dir,
-                                                                 beg_time_str))
+    ctl_settings_df = pd.DataFrame(best_policy_ts)
+    ctl_settings_df = control_settings_df.pivot_table(index='datetime')
+    ctl_settings_df.to_csv('{}ctl_results_{}{}.csv'.format(results_dir,
+                                                               beg_time_str,
+							       run_suffix)
+			  )
 
 
 def fmt_control_policies(control_array, control_str_ids, n_control_steps):
