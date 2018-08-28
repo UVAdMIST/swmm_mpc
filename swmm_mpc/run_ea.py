@@ -1,3 +1,5 @@
+import os
+import json
 import random
 import multiprocessing
 from deap import base, creator, tools, algorithms
@@ -33,11 +35,21 @@ def run_ea(nsteps, ngen, nindividuals, verbose_results, data_dir, hs_file_path,
                      target_depth_dict=target_depth_dict,
                      flood_weight=flood_weight,
                      dev_weight=dev_weight
-                     )
+                    )
     toolbox.register('individual', tools.initRepeat, creator.Individual,
                      toolbox.attr_int, nsteps)
-    toolbox.register('population', tools.initRepeat, list, toolbox.individual)
-    pop = toolbox.population(n=nindividuals)
+
+    # read from the json file to initialize population if exists
+    # (not first time)
+    if os.path.isfile("population.json"):
+        toolbox.register("pop_guess", init_population, list,
+                         creator.Individual, "population.json")
+        pop = toolbox.pop_guess()
+    else:
+        toolbox.register('population', tools.initRepeat, list,
+                         toolbox.individual)
+        pop = toolbox.population(n=nindividuals)
+
     hof = tools.HallOfFame(1)
     stats = tools.Statistics(lambda ind: ind.fitness.values)
     stats.register('avg', np.mean)
@@ -46,4 +58,38 @@ def run_ea(nsteps, ngen, nindividuals, verbose_results, data_dir, hs_file_path,
     pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2,
                                        ngen=ngen, stats=stats, halloffame=hof,
                                        verbose=True)
+    seed_next_population(hof[0], nindividuals)
     return hof[0]
+
+
+def write_pop_to_file(population):
+    pop_filename = 'population.json'
+    with open(pop_filename, 'w') as myfile:
+        json.dump(population, myfile) 
+
+
+def seed_next_population(best_policy, nindividuals):
+    list_of_inds = []
+    for i in range(nindividuals):
+        b = list(best_policy)
+        b = b[1:]
+        tools.mutUniformInt(b, 0, 10, 0.2)
+        b.append(random.randint(0, 10))
+        if b not in list_of_inds:
+            list_of_inds.append(b)
+
+    while len(list_of_inds) < nindividuals:
+        rand_ind = []
+        for i in range(len(best_policy)):
+            rand_ind.append(random.randint(0, 10))
+        if rand_ind not in list_of_inds:
+            list_of_inds.append(rand_ind)
+    write_pop_to_file(list_of_inds)
+    return list_of_inds
+
+
+
+def init_population(pcls, ind_init, filename):
+    with open(filename, "r") as pop_file:
+        contents = json.load(pop_file)
+    return pcls(ind_init(c) for c in contents)
