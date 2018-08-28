@@ -40,7 +40,8 @@ def get_deviation_cost(rpt, target_depth_dict):
 
     return sum(node_deviation_costs)
 
-def evaluate(individual, hs_file_path, process_file_path,
+
+def evaluate(individual, hs_file_path, process_file_path, sim_dt,
              control_time_step, n_control_steps, control_str_ids,
              node_flood_weight_dict, target_depth_dict, flood_weight,
              dev_weight):
@@ -51,13 +52,15 @@ def evaluate(individual, hs_file_path, process_file_path,
 
     # make a copy of the process model input file
     process_file_dir, process_file_name = os.path.split(process_file_path)
-    tmp_process_file_base = process_file_name.replace('.inp',
-                                                      '_tmp_' +
-                                                      rand_string)
+    tmp_process_base = process_file_name.replace('.inp',
+                                                 '_tmp_{}_{}'.format(
+						 sim_dt,
+						 rand_string
+						 ))
     tmp_process_inp = os.path.join(process_file_dir,
-                                   tmp_process_file_base + '.inp')
+                                   tmp_process_base + '.inp')
     tmp_process_rpt = os.path.join(process_file_dir,
-                                   tmp_process_file_base + '.rpt')
+                                   tmp_process_base + '.rpt')
     copyfile(process_file_path, tmp_process_inp)
 
     # make copy of hs file
