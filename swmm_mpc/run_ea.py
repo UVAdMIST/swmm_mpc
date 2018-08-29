@@ -58,7 +58,7 @@ def run_ea(nsteps, ngen, nindividuals, verbose_results, data_dir, hs_file_path,
     pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2,
                                        ngen=ngen, stats=stats, halloffame=hof,
                                        verbose=True)
-    seed_next_population(hof[0], nindividuals)
+    seed_next_population(hof[0], nindividuals, len(control_str_ids))
     return hof[0]
 
 
@@ -68,16 +68,26 @@ def write_pop_to_file(population):
         json.dump(population, myfile) 
 
 
-def seed_next_population(best_policy, nindividuals):
+def mutate_pop(best_policy, nindividuals, n_controls):
     list_of_inds = []
     for i in range(nindividuals):
-        b = list(best_policy)
-        b = b[1:]
-        tools.mutUniformInt(b, 0, 10, 0.2)
-        b.append(random.randint(0, 10))
-        if b not in list_of_inds:
+	# split because there may be more than one control
+	split_lists = split_list(list(best_policy), n_controls)
+	mutated_ind = []
+	for l in split_lists:
+	    l = l[1:]
+            tools.mutUniformInt(l, 0, 10, 0.2)
+            l.append(random.randint(0, 10))
+	    mutated_ind.extend(l)
+        if mutated_ind not in list_of_inds:
             list_of_inds.append(b)
+    return list_of_inds
 
+
+def seed_next_population(best_policy, nindividuals, n_controls):
+    mutated_pop = mutate_pop(best_policy, nindividuals, n_controls)
+
+    # fill the rest of the population with random individuals
     while len(list_of_inds) < nindividuals:
         rand_ind = []
         for i in range(len(best_policy)):
@@ -85,6 +95,7 @@ def seed_next_population(best_policy, nindividuals):
         if rand_ind not in list_of_inds:
             list_of_inds.append(rand_ind)
     write_pop_to_file(list_of_inds)
+
     return list_of_inds
 
 
@@ -93,3 +104,12 @@ def init_population(pcls, ind_init, filename):
     with open(filename, "r") as pop_file:
         contents = json.load(pop_file)
     return pcls(ind_init(c) for c in contents)
+
+
+def split_list(a_list, n):
+    portions = len(a_list)/n
+    split_lists = []
+    for i in range(n):
+	split_lists.append(a_list[i*portions: (i+1)*portions])	
+    return split_lists
+
