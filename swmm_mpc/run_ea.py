@@ -80,7 +80,7 @@ def mutate_pop(best_policy, nindividuals, n_controls):
             l.append(random.randint(0, 10))
 	    mutated_ind.extend(l)
         if mutated_ind not in list_of_inds:
-            list_of_inds.append(b)
+            list_of_inds.append(mutated_ind)
     return list_of_inds
 
 
