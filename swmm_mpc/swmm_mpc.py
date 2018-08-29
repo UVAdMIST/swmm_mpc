@@ -118,10 +118,10 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     print('elapsed time: {}'.format(elapsed_time.seconds))
 
     ctl_settings_df = pd.DataFrame(best_policy_ts)
-    ctl_settings_df = control_settings_df.pivot_table(index='datetime')
+    ctl_settings_df = ctl_settings_df.pivot_table(index='datetime')
     ctl_settings_df.to_csv('{}ctl_results_{}{}.csv'.format(results_dir,
-                                                               beg_time_str,
-							       run_suffix)
+                                                           beg_time_str,
+							   run_suffix)
 			  )
 
 
