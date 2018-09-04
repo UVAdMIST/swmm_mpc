@@ -88,15 +88,15 @@ def seed_next_population(best_policy, nindividuals, n_controls):
     mutated_pop = mutate_pop(best_policy, nindividuals, n_controls)
 
     # fill the rest of the population with random individuals
-    while len(list_of_inds) < nindividuals:
+    while len(mutated_pop) < nindividuals:
         rand_ind = []
         for i in range(len(best_policy)):
             rand_ind.append(random.randint(0, 10))
-        if rand_ind not in list_of_inds:
-            list_of_inds.append(rand_ind)
-    write_pop_to_file(list_of_inds)
+        if rand_ind not in mutated_pop:
+            mutated_pop.append(rand_ind)
+    write_pop_to_file(mutated_pop)
 
-    return list_of_inds
+    return mutated_pop
 
 
 
