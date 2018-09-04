@@ -3,7 +3,7 @@ import datetime
 from shutil import copyfile
 import pandas as pd
 import pyswmm
-from pyswmm import Simulation, Links
+from pyswmm import Simulation, Links, Nodes
 import update_process_model_input_file as up
 import run_ea as ra
 
@@ -12,7 +12,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                  control_str_ids, work_dir, results_dir,
                  target_depth_dict=None, node_flood_weight_dict=None,
                  flood_weight=1, dev_weight=1, ngen=7, nindividuals=100,
-                 verbose_results=False):
+                 verbose_results=False, run_suffix=''):
     '''
     inp_file_path: [string] path to .inp file
     control_horizon: [number] control horizon in hours
@@ -35,7 +35,9 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     ngen: [int] number of generations for GA
     nindividuals: [int] number of individuals for initial generation in GA
     verbose_results: [bool] whether or not verbose results should be saved
+    run_suffix: [string] will be added to the results filename
     '''
+    print(locals())
     # full file path
     # inp_file_path = os.path.abspath(inp_file_path)
     # the input directory and the file name
@@ -57,11 +59,13 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     beg_time_str = beg_time.strftime('%Y.%m.%d.%H.%M')
     print("Simulation start: {}".format(beg_time_str))
     best_policy_ts = []
+    pyswmm_data = []
     with Simulation(inp_file_path) as sim:
         sim.step_advance(control_time_step)
         for step in sim:
             # get most current system states
             current_dt = sim.current_time
+	    current_dt_str = current_dt.strftime('%Y.%m.%d.%H.%M')
 
             dt_hs_file = 'tmp_hsf.hsf'
             print(current_dt)
@@ -69,6 +73,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
             sim.save_hotstart(dt_hs_path)
 
             link_obj = Links(sim)
+            node_obj = Nodes(sim)
 
             # update the process model with the current states
             up.update_process_model_file(inp_process_file_path,
@@ -85,6 +90,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                                     results_dir,
                                     dt_hs_path,
                                     inp_process_file_path,
+				    current_dt_str,
                                     control_time_step,
                                     n_control_steps,
                                     control_str_ids,
@@ -108,15 +114,32 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                 control_id_short = control_id.split()[-1]
                 link_obj[control_id_short].target_setting = best_policy_per
 
+	
+	
+	    # get pyswmm info
+	    nodes = ["J3", "St1", "St2"]
+	    for n in nodes:
+		node = node_obj[n]
+		depth = node.depth
+		pyswmm_data.append({'depth_{}'.format(n):depth,
+				    'datetime': current_dt})
+
     end_time = datetime.datetime.now()
     print('simulation end: {}'.format(end_time.strftime('%Y.%m.%d.%H.%M')))
     elapsed_time = end_time - beg_time
     print('elapsed time: {}'.format(elapsed_time.seconds))
 
-    control_settings_df = pd.DataFrame(best_policy_ts)
-    control_settings_df = control_settings_df.pivot_table(index='datetime')
-    control_settings_df.to_csv('{}control_results_{}.csv'.format(results_dir,
-                                                                 beg_time_str))
+    ctl_settings_df = pd.DataFrame(best_policy_ts)
+    ctl_settings_df = ctl_settings_df.pivot_table(index='datetime')
+    ctl_settings_df.to_csv('{}ctl_results_{}{}.csv'.format(results_dir,
+                                                           beg_time_str,
+							   run_suffix)
+			  )
+    pyswmm_df = pd.DataFrame(pyswmm_data)
+    pyswmm_df = pyswmm_df.pivot_table(index='datetime')
+    pyswmm_df.to_csv('{}pyswmm_results_{}{}'.format(results_dir, 
+	    					    beg_time_str,
+						    run_suffix))
 
 
 def fmt_control_policies(control_array, control_str_ids, n_control_steps):
