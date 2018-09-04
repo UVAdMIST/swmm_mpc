@@ -19,7 +19,7 @@ toolbox.register('mutate', tools.mutUniformInt, low=0, up=10, indpb=0.10)
 toolbox.register('select', tools.selTournament, tournsize=6)
 
 
-def run_ea(nsteps, ngen, nindividuals, verbose_results, data_dir, hs_file_path,
+def run_ea(nsteps, ngen, nindividuals, work_dir, hs_file_path,
            inp_process_file_path, sim_dt, control_time_step, n_control_steps,
            control_str_ids, target_depth_dict, node_flood_weight_dict,
            flood_weight, dev_weight):
@@ -41,9 +41,10 @@ def run_ea(nsteps, ngen, nindividuals, verbose_results, data_dir, hs_file_path,
 
     # read from the json file to initialize population if exists
     # (not first time)
-    if os.path.isfile("population.json"):
+    pop_file = "{}population.json".format(work_dir)
+    if os.path.isfile(pop_file):
         toolbox.register("pop_guess", init_population, list,
-                         creator.Individual, "population.json")
+                         creator.Individual, pop_file)
         pop = toolbox.pop_guess()
     else:
         toolbox.register('population', tools.initRepeat, list,
@@ -58,13 +59,12 @@ def run_ea(nsteps, ngen, nindividuals, verbose_results, data_dir, hs_file_path,
     pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2,
                                        ngen=ngen, stats=stats, halloffame=hof,
                                        verbose=True)
-    seed_next_population(hof[0], nindividuals, len(control_str_ids))
+    seed_next_population(hof[0], nindividuals, len(control_str_ids), pop_file)
     return hof[0]
 
 
-def write_pop_to_file(population):
-    pop_filename = 'population.json'
-    with open(pop_filename, 'w') as myfile:
+def write_pop_to_file(population, pop_file):
+    with open(pop_file, 'w') as myfile:
         json.dump(population, myfile) 
 
 
@@ -84,7 +84,7 @@ def mutate_pop(best_policy, nindividuals, n_controls):
     return list_of_inds
 
 
-def seed_next_population(best_policy, nindividuals, n_controls):
+def seed_next_population(best_policy, nindividuals, n_controls, pop_file):
     mutated_pop = mutate_pop(best_policy, nindividuals, n_controls)
 
     # fill the rest of the population with random individuals
@@ -94,7 +94,7 @@ def seed_next_population(best_policy, nindividuals, n_controls):
             rand_ind.append(random.randint(0, 10))
         if rand_ind not in mutated_pop:
             mutated_pop.append(rand_ind)
-    write_pop_to_file(mutated_pop)
+    write_pop_to_file(mutated_pop, pop_file)
 
     return mutated_pop
 
