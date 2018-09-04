@@ -12,7 +12,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                  control_str_ids, work_dir, results_dir,
                  target_depth_dict=None, node_flood_weight_dict=None,
                  flood_weight=1, dev_weight=1, ngen=7, nindividuals=100,
-                 verbose_results=False, run_suffix=''):
+                 run_suffix=''):
     '''
     inp_file_path: [string] path to .inp file
     control_horizon: [number] control horizon in hours
@@ -34,7 +34,6 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                             e.g., {'st1': 10, 'J3': 1}
     ngen: [int] number of generations for GA
     nindividuals: [int] number of individuals for initial generation in GA
-    verbose_results: [bool] whether or not verbose results should be saved
     run_suffix: [string] will be added to the results filename
     '''
     print(locals())
@@ -86,8 +85,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
             best_policy = ra.run_ea(nsteps,
                                     ngen,
                                     nindividuals,
-                                    verbose_results,
-                                    results_dir,
+                                    work_dir,
                                     dt_hs_path,
                                     inp_process_file_path,
 				    current_dt_str,
