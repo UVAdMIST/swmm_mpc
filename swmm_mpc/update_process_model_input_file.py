@@ -117,8 +117,9 @@ def update_controls_and_hotstart(inp_file, control_time_step, policies,
     with open(inp_file, 'w') as inpfile:
         inpfile.writelines(updated_lines)
 
-def update_controls_with_policy(inp_file, control_time_step, policy_file):
+def update_controls_with_policy(inp_file, policy_file):
     policy_df = pd.read_csv(policy_file)
+    control_time_step = get_control_time_step(policy_df)
     policy_columns = [col for col in policy_df.columns if "setting" in col]
     policy_dict = {}
     for policy_col in policy_columns:
@@ -144,3 +145,12 @@ def read_hs_filename(inp_file):
             if line.startswith("USE HOTSTART"):
                 hs_filename = line.split()[-1].replace('"', '')
                 return hs_filename
+
+def get_control_time_step(df, dt_col="datetime"):
+    times = (pd.to_datetime(df[dt_col]))
+    delta_times = times.diff()
+    time_step = delta_times.mean().seconds
+    if time_step % 60:
+        raise Exception("The time step in your file is in between minutes")
+    else:
+        return time_step
