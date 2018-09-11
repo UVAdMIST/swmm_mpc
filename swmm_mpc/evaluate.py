@@ -8,25 +8,25 @@ from rpt_ele import rpt_ele
 import update_process_model_input_file as up
 
 
-def get_flood_cost(rpt, node_flood_weight_dict):
+def get_flood_cost_from_dict(rpt, node_flood_weight_dict):
     node_flood_costs = []
-
-    if not rpt.flooding_df.empty and node_flood_weight_dict:
-        for nodeid, weight in node_flood_weight_dict.iteritems():
-            # try/except used here in case there is no flooding for one or
-            # more of the nodes
-            try:
-                # flood volume is in column, 5
-                node_flood_volume = float(rpt.flooding_df.loc[nodeid, 5])
-                node_flood_cost = (weight*node_flood_volume)
-                node_flood_costs.append(node_flood_cost)
-            except:
-                pass
-    else:
-        node_flood_costs.append(rpt.total_flooding)
-
+    for nodeid, weight in node_flood_weight_dict.iteritems():
+        # try/except used here in case there is no flooding for one or
+        # more of the nodes
+        try:
+            # flood volume is in column, 5
+            node_flood_volume = float(rpt.flooding_df.loc[nodeid, 5])
+            node_flood_cost = (weight*node_flood_volume)
+            node_flood_costs.append(node_flood_cost)
+        except:
+            pass
     return sum(node_flood_costs)
 
+def get_flood_cost(rpt, node_flood_weight_dict):
+    if rpt.total_flooding > 0 and node_flood_weight_dict:
+        return get_flood_cost_from_dict(rpt, node_flood_weight_dict)
+    else:
+        return rpt.total_flooding
 
 def get_deviation_cost(rpt, target_depth_dict):
     node_deviation_costs = []
