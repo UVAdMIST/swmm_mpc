@@ -43,9 +43,10 @@ export PATH="/path/to/swmm5/src:$PATH"
 ```
 
 # Usage
-Here is an example of how I use swmm_mpc. First I write a small script to 
-indicate the model and the different parameters I want to use, like this 
-(called "my_swmm_mpc.py in the next step"):
+The `run_swmm_mpc` function is the main function (maybe the only function) that 
+you will likely use. Here is an example of how I use it. First I write a small 
+script to indicate the model and the different parameters I want to use, like 
+this (called `my_swmm_mpc.py` in the next step):
 
 ```
 from swmm_mpc.swmm_mpc import run_swmm_mpc
