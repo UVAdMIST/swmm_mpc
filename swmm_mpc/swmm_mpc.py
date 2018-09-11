@@ -3,7 +3,7 @@ import datetime
 from shutil import copyfile
 import pandas as pd
 import pyswmm
-from pyswmm import Simulation, Links, Nodes
+from pyswmm import Simulation, Links
 import update_process_model_input_file as up
 import run_ea as ra
 
@@ -53,18 +53,23 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
 
     n_control_steps = int(control_horizon*3600/control_time_step)
 
-    # run simulation
+    # record when simulation begins
     beg_time = datetime.datetime.now()
     beg_time_str = beg_time.strftime('%Y.%m.%d.%H.%M')
     print("Simulation start: {}".format(beg_time_str))
     best_policy_ts = []
-    pyswmm_data = []
+
+    # make sure there is no control rules in inp file
+    up.remove_control_section(inp_file_path)
+
+    # run simulation
     with Simulation(inp_file_path) as sim:
         sim.step_advance(control_time_step)
+        sim_start_time = sim.start_time
         for step in sim:
             # get most current system states
             current_dt = sim.current_time
-	    current_dt_str = current_dt.strftime('%Y.%m.%d.%H.%M')
+            current_dt_str = current_dt.strftime('%Y.%m.%d.%H.%M')
 
             dt_hs_file = 'tmp_hsf.hsf'
             print(current_dt)
@@ -72,7 +77,6 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
             sim.save_hotstart(dt_hs_path)
 
             link_obj = Links(sim)
-            node_obj = Nodes(sim)
 
             # update the process model with the current states
             up.update_process_model_file(inp_process_file_path,
@@ -88,15 +92,14 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                                     work_dir,
                                     dt_hs_path,
                                     inp_process_file_path,
-				    current_dt_str,
+                                    current_dt_str,
                                     control_time_step,
                                     n_control_steps,
                                     control_str_ids,
                                     target_depth_dict,
                                     node_flood_weight_dict,
                                     flood_weight,
-                                    dev_weight
-                                    )
+                                    dev_weight)
 
             best_policy_fmt = fmt_control_policies(best_policy,
                                                    control_str_ids,
@@ -112,32 +115,23 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                 control_id_short = control_id.split()[-1]
                 link_obj[control_id_short].target_setting = best_policy_per
 
-	
-	
-	    # get pyswmm info
-	    nodes = ["J3", "St1", "St2"]
-	    for n in nodes:
-		node = node_obj[n]
-		depth = node.depth
-		pyswmm_data.append({'depth_{}'.format(n):depth,
-				    'datetime': current_dt})
-
     end_time = datetime.datetime.now()
     print('simulation end: {}'.format(end_time.strftime('%Y.%m.%d.%H.%M')))
     elapsed_time = end_time - beg_time
     print('elapsed time: {}'.format(elapsed_time.seconds))
 
+    # consolidate ctl settings and save to csv file
     ctl_settings_df = pd.DataFrame(best_policy_ts)
     ctl_settings_df = ctl_settings_df.pivot_table(index='datetime')
-    ctl_settings_df.to_csv('{}ctl_results_{}{}.csv'.format(results_dir,
-                                                           beg_time_str,
-							   run_suffix)
-			  )
-    pyswmm_df = pd.DataFrame(pyswmm_data)
-    pyswmm_df = pyswmm_df.pivot_table(index='datetime')
-    pyswmm_df.to_csv('{}pyswmm_results_{}{}'.format(results_dir, 
-	    					    beg_time_str,
-						    run_suffix))
+    ctl_settings_df.index = pd.DatetimeIndex(ctl_settings_df.index)
+    # add a row at the beginning of the policy since controls start open
+    ctl_settings_df.loc[sim_start_time] = [1 for i in control_str_ids]
+    results_file = '{}ctl_results_{}{}.csv'.format(results_dir, beg_time_str,
+                                                   run_suffix)
+    ctl_settings_df.to_csv(results_file)
+
+    # update original inp file with found control policy
+    up.update_controls_with_policy(inp_file_path, results_file)
 
 
 def fmt_control_policies(control_array, control_str_ids, n_control_steps):
