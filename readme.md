@@ -51,12 +51,12 @@ this (called `my_swmm_mpc.py` in the next step):
 ```python
 from swmm_mpc.swmm_mpc import run_swmm_mpc
 
-inp_file = "/home/jms3fb/research/sadler4/paper_4/test_models/models/simple_2_ctl_smt.inp"
+inp_file = "/path/to/my/model.inp"
 control_horizon = 1. #hr
 control_time_step = 900. #sec
 control_str_ids = ["ORIFICE R1", "ORIFICE R2"]
-results_dir = "/home/jms3fb/research/sadler4/paper_4/data/results/"
-work_dir = "/home/jms3fb/research/work/"
+results_dir = "/path/to/results/"
+work_dir = "/path/to/work/"
 ngen = 4
 nindividuals = 300
 
