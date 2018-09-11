@@ -42,3 +42,44 @@ To add to the path, add this line to your .bashrc
 export PATH="/path/to/swmm5/src:$PATH"
 ```
 
+# Usage
+Here is an example of how I use swmm_mpc. First I write a small script to 
+indicate the model and the different parameters I want to use, like this 
+(called "my_swmm_mpc.py in the next step"):
+
+```
+from swmm_mpc.swmm_mpc import run_swmm_mpc
+
+inp_file = "/home/jms3fb/research/sadler4/paper_4/test_models/models/simple_2_ctl_smt.inp"
+control_horizon = 1. #hr
+control_time_step = 900. #sec
+control_str_ids = ["ORIFICE R1", "ORIFICE R2"]
+results_dir = "/home/jms3fb/research/sadler4/paper_4/data/results/"
+work_dir = "/home/jms3fb/research/work/"
+ngen = 4
+nindividuals = 300
+
+# target_depth_dict={'St1':{'target':1, 'weight':0.1}, 'St2':{'target':1.5, 'weight':0.1}}
+
+
+
+def main():
+    run_swmm_mpc(inp_file,
+                 control_horizon,
+                 control_time_step,
+                 control_str_ids,
+		 work_dir,
+                 results_dir,
+                 # target_depth_dict=target_depth_dict,
+                 ngen=ngen,
+                 nindividuals=nindividuals
+                 )
+
+if __name__ == "__main__":
+    main()
+```
+
+Then to run it, you simply call the script with python:
+```
+python my_swmm_mpc.py
+```
