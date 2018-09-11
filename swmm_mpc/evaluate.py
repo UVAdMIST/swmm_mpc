@@ -13,6 +13,8 @@ def get_flood_cost_from_dict(rpt, node_flood_weight_dict):
     for nodeid, weight in node_flood_weight_dict.iteritems():
         # try/except used here in case there is no flooding for one or
         # more of the nodes
+        if nodeid not in rpt.node_ids:
+            print ("warning node {} is not in model".format(nodeid))
         try:
             # flood volume is in column, 5
             node_flood_volume = float(rpt.flooding_df.loc[nodeid, 5])

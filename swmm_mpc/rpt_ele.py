@@ -13,6 +13,7 @@ class rpt_ele():
         else:
             self.flooding_df = pd.DataFrame()
         self.depth_df = self.get_summary_df("Node Depth Summary") 
+        self.node_ids = self.depth_df.index.tolist()
 
     def get_file_contents(self):
         with open(self.rpt, 'r') as f:
