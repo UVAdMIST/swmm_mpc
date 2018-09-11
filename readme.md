@@ -60,7 +60,7 @@ work_dir = "/home/jms3fb/research/work/"
 ngen = 4
 nindividuals = 300
 
-# target_depth_dict={'St1':{'target':1, 'weight':0.1}, 'St2':{'target':1.5, 'weight':0.1}}
+target_depth_dict={'St1':{'target':1, 'weight':0.1}, 'St2':{'target':1.5, 'weight':0.1}}
 
 
 
@@ -71,7 +71,7 @@ def main():
                  control_str_ids,
 		 work_dir,
                  results_dir,
-                 # target_depth_dict=target_depth_dict,
+                 target_depth_dict=target_depth_dict,
                  ngen=ngen,
                  nindividuals=nindividuals
                  )
