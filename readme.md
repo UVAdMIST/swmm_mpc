@@ -48,7 +48,7 @@ you will likely use. Here is an example of how I use it. First I write a small
 script to indicate the model and the different parameters I want to use, like 
 this (called `my_swmm_mpc.py` in the next step):
 
-```
+```python
 from swmm_mpc.swmm_mpc import run_swmm_mpc
 
 inp_file = "/home/jms3fb/research/sadler4/paper_4/test_models/models/simple_2_ctl_smt.inp"
