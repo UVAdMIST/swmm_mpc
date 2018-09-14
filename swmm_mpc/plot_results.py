@@ -62,8 +62,36 @@ def plot_versions_single(df, ylabel, title=None, colors=None, ax=None,
     return ax
 
 
-def plot_versions_together(node_id_vars, rpt_files, rpt_labels, units, fig_dir,
-                           sfx):
+def get_unit_label(units, variable):
+    variable = variable.lower()
+    if units == 'english':
+        if variable == 'depth':
+            return "[ft]"
+        elif variable == 'flooding':
+            return "[cfs]"
+        else:
+            return "unknown"
+    elif units == 'metric':
+        if variable == 'depth':
+            return '[m]'
+        elif variable == 'flooding':
+            return '[cms]'
+        else:
+            return 'unknown'
+    else:
+        return 'unknown'
+
+
+def make_values_metric(df, variable):
+    if variable.lower() == "depth":
+        factor = 0.3048  # meters/foot
+    elif variable.lower() == "flooding":
+        factor = 0.028316847000000252 # cubic meters/cubic foot
+    return df*factor
+
+
+def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx, 
+                           units="english"):
     """
     plot variable results at different nodes in one figure
     node_id_vars: list of tuples - tuple has node_id as first element and
@@ -73,11 +101,10 @@ def plot_versions_together(node_id_vars, rpt_files, rpt_labels, units, fig_dir,
                 in each sublot
     rpt_labels: list of strings - labels for the different rpt versions
                 (e.g., ["Passive", "Rules", "MPC"])
-    units: list of string - units of variable to be plotted for each variable
-           (e.g., [('ft'), ('cfs')]). Should have the same number of members as
-           node_id_vars
     fig_dir: string - directory where file should be saved
     sfx: string - suffix to be put on the end of the file name
+    units: string - "english" or "metric". If "metric" conversions from english
+           units will be performed
     """
     rpts = [rpt_ele(r) for r in rpt_files]
 
@@ -94,6 +121,17 @@ def plot_versions_together(node_id_vars, rpt_files, rpt_labels, units, fig_dir,
     counter = 0
     for node_id, variable in node_id_vars:
         var_df = get_df(rpts, node_id, variable, rpt_labels)
+
+        # correct for units
+        if units == 'metric':
+            var_df = make_values_metric(var_df, variable)
+        elif units == 'english':
+            pass
+        else:
+            raise ValueError('units variable needs to be "english" or "metric". you entered {}'.format(units))
+
+        unit_label = get_unit_label(units, variable)
+
         plot_title = "{} at {}".format(variable, node_id)
 
         if counter + 1 == len(node_id_vars):
@@ -101,7 +139,7 @@ def plot_versions_together(node_id_vars, rpt_files, rpt_labels, units, fig_dir,
         else:
             lgd = False
 
-        plot_versions_single(var_df, units[counter], title=plot_title,
+        plot_versions_single(var_df, unit_label, title=plot_title,
                              ax=axs_list[counter], lgd=lgd)
         counter += 1
 
