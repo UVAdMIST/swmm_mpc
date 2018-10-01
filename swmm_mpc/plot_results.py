@@ -1,9 +1,8 @@
+import math
 import matplotlib.pyplot as plt
-from rpt_ele import rpt_ele
-from update_process_model_input_file import update_controls_with_policy
 import pandas as pd
 import matplotlib.dates as mdates
-
+from rpt_ele import rpt_ele
 
 
 def get_df(rpts, ele, variable, column_names=None):
@@ -18,7 +17,7 @@ def get_df(rpts, ele, variable, column_names=None):
                   (e.g., ["Passive", "Rules", "MPC"])
     """
     ser_list = []
-    for i,rpt in enumerate(rpts):
+    for i, rpt in enumerate(rpts):
         if variable == "Total Flooding":
             ser_list.append(pd.Series([rpt.total_flooding]))
         else:
@@ -29,8 +28,8 @@ def get_df(rpts, ele, variable, column_names=None):
     return comb
 
 
-def plot_versions_single(df, variable, ylabel, fontsize, title=None, 
-                         colors=None, ax=None, lgd=False):
+def plot_versions_single(df, variable, ylabel, fontsize, lw, title=None,
+                         colors=None, ax=None):
     """
     make a plot of multiple versions of rpt_elements at one node for one
     variable
@@ -45,37 +44,36 @@ def plot_versions_single(df, variable, ylabel, fontsize, title=None,
     """
     plt.rc('font', weight='bold', size=fontsize)
     if not colors:
-        colors = ["0.55", "royalblue", "yellowgreen"]
+        colors = ["#D4D5CD", "#000d29",  "#118c8b"]
 
     if variable == "Total Flooding":
-        ax=df.plot.bar(ax=ax, color=colors)
+        df = df*1000
+        ax = df.plot.bar(ax=ax, color=colors, legend=False)
         plt.tick_params(
                         axis='x',      # changes apply to the x-axis
-                        which='both',  # both major and minor ticks are affected
+                        which='both',  # major and minor ticks are affected
                         bottom=False,  # ticks along the bottom edge are off
-                        top=False,     # ticks along the top edge are off   
+                        top=False,     # ticks along the top edge are off
                         labelbottom=False  # label is off
                         )
     else:
         for col in df.columns:
-            ax.plot(df.index, df[col], label=col, lw=4)
+            ax.plot(df.index, df[col], label=col, lw=lw)
         lines = ax.lines
 
         for i in range(len(lines)):
             lines[i].set_color(colors[i])
 
-        ax.set_xlabel('Time elapsed (hr)')
+        ax.set_xlabel('Time elapsed (hr)', fontsize=fontsize, weight='bold')
         ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
         ax.set_xlim((df.index.min(), df.index.max()))
 
-    ax.set_ylabel(ylabel) 
-    if lgd:
-        ax.legend()
+    ax.set_ylabel(ylabel, fontsize=fontsize, weight='bold')
     if title:
-        ax.set_title(title)
-    ax.xaxis.set_tick_params()
-    ax.yaxis.set_tick_params()
+        ax.set_title(title, fontsize=fontsize, weight='bold')
+    ax.xaxis.set_tick_params(labelsize=fontsize)
+    ax.yaxis.set_tick_params(labelsize=fontsize)
     return ax
 
 
@@ -87,16 +85,16 @@ def get_unit_label(units, variable):
         elif variable == 'flooding':
             return "cfs"
         elif variable == 'total flooding':
-            return '10^6 cubic meters'
+            return '10^3 cubic feet'
         else:
             return "unknown"
     elif units == 'metric':
         if variable == 'depth':
             return 'm'
-        elif variable == 'flooding' :
+        elif variable == 'flooding':
             return 'cms'
         elif variable == 'total flooding':
-            return '10^6 cubic meters'
+            return '10^3 cubic meters'
         else:
             return 'unknown'
     else:
@@ -108,12 +106,12 @@ def make_values_metric(df, variable):
     if variable == "depth":
         factor = 0.3048  # meters/foot
     elif variable == 'flooding' or variable == 'total flooding':
-        factor = 0.028316847000000252 # cubic meters/cubic foot
+        factor = 0.028316847000000252  # cubic meters/cubic foot
     return df*factor
 
 
-def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx, 
-                           units="english", fontsize=12):
+def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx,
+                           units="english", fontsize=12, figsize=(6, 4), lw=2):
     """
     plot variable results at different nodes in one figure
     node_id_vars: list of tuples - tuple has node_id as first element and
@@ -132,8 +130,9 @@ def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx,
 
     nplots = len(node_id_vars)
     nrows = int(round(nplots**0.5))
-    fig, axs = plt.subplots(nrows=nrows, ncols=nrows, sharex=False,
-                            figsize=(15, 10))
+    ncols = int(math.ceil(float(nplots)/float(nrows)))
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex=False,
+                            figsize=figsize)
 
     if nplots > 1:
         axs_list = axs.ravel()
@@ -150,7 +149,8 @@ def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx,
         elif units == 'english':
             pass
         else:
-            raise ValueError('units variable needs to be "english" or "metric". you entered {}'.format(units))
+            raise ValueError('units variable should be "english" or "metric".\
+                              you entered {}'.format(units))
 
         unit_label = get_unit_label(units, variable)
 
@@ -159,16 +159,15 @@ def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx,
         else:
             plot_title = "{}".format(variable)
 
-        if counter + 1 == len(node_id_vars):
-            lgd = True
-        else:
-            lgd = False
-
-        plot_versions_single(var_df, variable, unit_label, fontsize, 
-                             title=plot_title, ax=axs_list[counter], lgd=lgd)
+        ax = plot_versions_single(var_df, variable, unit_label, fontsize, lw,
+                                  title=plot_title, ax=axs_list[counter])
         counter += 1
 
-    plt.tight_layout()
+    handles, labels = ax.get_legend_handles_labels()
     fig.autofmt_xdate()
+    fig.legend(handles, labels, loc='lower center', ncol=3,
+               bbox_to_anchor=(0.5, 0))
+    fig.tight_layout()
+    fig.subplots_adjust(bottom=0.2)
     fig.savefig("{}/{}_{}".format(fig_dir, "combined", sfx), dpi=300)
     plt.show()
