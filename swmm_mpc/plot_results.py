@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.dates as mdates
 
 
+
 def get_df(rpts, ele, variable, column_names=None):
     """
     get pandas dataframe of different versions of results for one element for
@@ -17,16 +18,19 @@ def get_df(rpts, ele, variable, column_names=None):
                   (e.g., ["Passive", "Rules", "MPC"])
     """
     ser_list = []
-    for rpt in rpts:
-        ser_list.append(rpt.get_ele_df(ele)[variable])
+    for i,rpt in enumerate(rpts):
+        if variable == "Total Flooding":
+            ser_list.append(pd.Series([rpt.total_flooding]))
+        else:
+            ser_list.append(rpt.get_ele_df(ele)[variable])
     comb = pd.concat(ser_list, 1)
     if column_names:
         comb.columns = column_names
     return comb
 
 
-def plot_versions_single(df, ylabel, title=None, colors=None, ax=None, 
-                         lgd=False):
+def plot_versions_single(df, variable, ylabel, fontsize, title=None, 
+                         colors=None, ax=None, lgd=False):
     """
     make a plot of multiple versions of rpt_elements at one node for one
     variable
@@ -39,26 +43,39 @@ def plot_versions_single(df, ylabel, title=None, colors=None, ax=None,
     ax: matplotlib axes object - axes where the plot will be made
     lgd: boolean - whether to include legend or not
     """
-    font_size = 12
-    for col in df.columns:
-        ax.plot(df.index, df[col], label=col)
-    lines = ax.lines
-
+    plt.rc('font', weight='bold', size=fontsize)
     if not colors:
         colors = ["0.55", "royalblue", "yellowgreen"]
 
-    for i in range(len(lines)):
-        lines[i].set_color(colors[i])
+    if variable == "Total Flooding":
+        ax=df.plot.bar(ax=ax, color=colors)
+        plt.tick_params(
+                        axis='x',      # changes apply to the x-axis
+                        which='both',  # both major and minor ticks are affected
+                        bottom=False,  # ticks along the bottom edge are off
+                        top=False,     # ticks along the top edge are off   
+                        labelbottom=False  # label is off
+                        )
+    else:
+        for col in df.columns:
+            ax.plot(df.index, df[col], label=col, lw=4)
+        lines = ax.lines
 
+        for i in range(len(lines)):
+            lines[i].set_color(colors[i])
+
+        ax.set_xlabel('Time elapsed (hr)')
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
+        ax.set_xlim((df.index.min(), df.index.max()))
+
+    ax.set_ylabel(ylabel) 
     if lgd:
         ax.legend()
-    ax.set_xlabel("Time elapsed (hr)", fontsize=font_size)
-    ax.set_ylabel(ylabel, fontsize=font_size)
-    ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
-    ax.set_xlim((df.index.min(), df.index.max()))
     if title:
         ax.set_title(title)
+    ax.xaxis.set_tick_params()
+    ax.yaxis.set_tick_params()
     return ax
 
 
@@ -66,16 +83,20 @@ def get_unit_label(units, variable):
     variable = variable.lower()
     if units == 'english':
         if variable == 'depth':
-            return "[ft]"
+            return "ft"
         elif variable == 'flooding':
-            return "[cfs]"
+            return "cfs"
+        elif variable == 'total flooding':
+            return '10^6 cubic meters'
         else:
             return "unknown"
     elif units == 'metric':
         if variable == 'depth':
-            return '[m]'
-        elif variable == 'flooding':
-            return '[cms]'
+            return 'm'
+        elif variable == 'flooding' :
+            return 'cms'
+        elif variable == 'total flooding':
+            return '10^6 cubic meters'
         else:
             return 'unknown'
     else:
@@ -83,15 +104,16 @@ def get_unit_label(units, variable):
 
 
 def make_values_metric(df, variable):
-    if variable.lower() == "depth":
+    variable = variable.lower()
+    if variable == "depth":
         factor = 0.3048  # meters/foot
-    elif variable.lower() == "flooding":
+    elif variable == 'flooding' or variable == 'total flooding':
         factor = 0.028316847000000252 # cubic meters/cubic foot
     return df*factor
 
 
 def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx, 
-                           units="english"):
+                           units="english", fontsize=12):
     """
     plot variable results at different nodes in one figure
     node_id_vars: list of tuples - tuple has node_id as first element and
@@ -110,8 +132,8 @@ def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx,
 
     nplots = len(node_id_vars)
     nrows = int(round(nplots**0.5))
-    fig, axs = plt.subplots(nrows=nrows, ncols=nrows, sharex=True,
-                            figsize=(10, 10))
+    fig, axs = plt.subplots(nrows=nrows, ncols=nrows, sharex=False,
+                            figsize=(15, 10))
 
     if nplots > 1:
         axs_list = axs.ravel()
@@ -132,19 +154,21 @@ def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx,
 
         unit_label = get_unit_label(units, variable)
 
-        plot_title = "{} at {}".format(variable, node_id)
+        if node_id != '':
+            plot_title = "{} at {}".format(variable, node_id)
+        else:
+            plot_title = "{}".format(variable)
 
         if counter + 1 == len(node_id_vars):
             lgd = True
         else:
             lgd = False
 
-        plot_versions_single(var_df, unit_label, title=plot_title,
-                             ax=axs_list[counter], lgd=lgd)
+        plot_versions_single(var_df, variable, unit_label, fontsize, 
+                             title=plot_title, ax=axs_list[counter], lgd=lgd)
         counter += 1
 
-    # plt.tight_layout()
+    plt.tight_layout()
     fig.autofmt_xdate()
-    fig.savefig("{}/{}_{}".format(fig_dir, "combined", sfx),
-                bbox_inches="tight")
+    fig.savefig("{}/{}_{}".format(fig_dir, "combined", sfx), dpi=300)
     plt.show()
