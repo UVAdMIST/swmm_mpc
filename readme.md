@@ -4,7 +4,7 @@
 # Installation
 ## 1. Install swmm_mpc
 ```
-git clone https://github.com/uva-hydroinformatics/swmm_mpc.git
+git clone https://github.com/UVAdMIST/swmm_mpc.git
 pip install swmm_mpc/
 ```
 ## 2. Install pyswmm
