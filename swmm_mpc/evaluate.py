@@ -11,7 +11,11 @@ import update_process_model_input_file as up
 def get_flood_cost_from_dict(rpt, node_flood_weight_dict):
     node_flood_costs = []
     for nodeid, weight in node_flood_weight_dict.iteritems():
-        # try/except used here in case there is no flooding for one or
+        # if user put "Node J3" for nodeid instead of just "J3" make \
+        # nodeid "J3"
+        if len(nodeid.split())>0:
+            nodeid = nodeid.split()[-1]
+        # try/except used here in case there is no flooding for one or \
         # more of the nodes
         if nodeid not in rpt.node_ids:
             print ("warning node {} is not in model".format(nodeid))
