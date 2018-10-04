@@ -11,7 +11,6 @@ setup(name='swmm_mpc',
       install_requires=[
           'pandas',
           'matplotlib',
-          'scoop',
           'numpy',
           'deap',
           ],
