@@ -20,7 +20,7 @@ You will also need to have a working version of EPASWMM5 on your machine and hav
 wget https://www.epa.gov/sites/production/files/2017-03/swmm51012_engine_2.zip
 unzip swmm51012_engine_2.zip -d swmm5
 cd swmm5/
-unzip sources5_1_012.zip -d src
+unzip source5_1_012.zip -d src
 unzip makefiles.zip -d mk
 cd mk
 unzip GNU-CLE.zip -d gnu
