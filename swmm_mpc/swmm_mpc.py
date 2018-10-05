@@ -126,6 +126,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     ctl_settings_df.index = pd.DatetimeIndex(ctl_settings_df.index)
     # add a row at the beginning of the policy since controls start open
     ctl_settings_df.loc[sim_start_time] = [1 for i in control_str_ids]
+    ctl_settings_df.sort_index(inplace=True)
     results_file = '{}ctl_results_{}{}.csv'.format(results_dir, beg_time_str,
                                                    run_suffix)
     ctl_settings_df.to_csv(results_file)
