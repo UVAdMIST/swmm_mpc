@@ -1,4 +1,5 @@
 import math
+import string
 import matplotlib.pyplot as plt
 import pandas as pd
 import matplotlib.dates as mdates
@@ -29,7 +30,7 @@ def get_df(rpts, ele, variable, column_names=None):
 
 
 def plot_versions_single(df, variable, ylabel, fontsize, lw, title=None,
-                         colors=None, ax=None):
+                         colors=None, ax=None, sublabel=None)
     """
     make a plot of multiple versions of rpt_elements at one node for one
     variable
@@ -56,6 +57,10 @@ def plot_versions_single(df, variable, ylabel, fontsize, lw, title=None,
                         top=False,     # ticks along the top edge are off
                         labelbottom=False  # label is off
                         )
+        ax.set_ylim((0, df.max().max()*1.15))
+        for p in ax.patches:
+            val = str(round(p.get_height(),2))
+            ax.annotate(val, (p.get_x(), p.get_height() * 1.005))
     else:
         for col in df.columns:
             ax.plot(df.index, df[col], label=col, lw=lw)
@@ -68,6 +73,12 @@ def plot_versions_single(df, variable, ylabel, fontsize, lw, title=None,
         ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
         ax.set_xlim((df.index.min(), df.index.max()))
+        ax.grid(which='both', color='lightgray')
+    
+    if sublabel:
+        ax.text(0.02, 0.98, sublabel, horizontalalignment='left', 
+                verticalalignment='top', transform=ax.transAxes,
+                fontsize=fontsize)
 
     ax.set_ylabel(ylabel, fontsize=fontsize, weight='bold')
     if title:
@@ -160,7 +171,8 @@ def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx,
             plot_title = "{}".format(variable)
 
         ax = plot_versions_single(var_df, variable, unit_label, fontsize, lw,
-                                  title=plot_title, ax=axs_list[counter])
+                                  title=plot_title, ax=axs_list[counter],
+                                  sublabel=string.ascii_uppercase[counter])
         counter += 1
 
     handles, labels = ax.get_legend_handles_labels()
