@@ -6,10 +6,10 @@ import matplotlib.dates as mdates
 from rpt_ele import rpt_ele
 
 
+
 def get_df(rpts, ele, variable, column_names=None):
     """
-    get pandas dataframe of different versions of results for one element for
-    one variable
+    get pandas dataframe of different versions of results for one element for one variable
     rpts: list of rpt_ele objects - rpt_objects to be combined
     ele: string - swmm model element to extract from rpt_ele objects
          (e.g., "Node J3")
@@ -30,7 +30,7 @@ def get_df(rpts, ele, variable, column_names=None):
 
 
 def plot_versions_single(df, variable, ylabel, fontsize, lw, title=None,
-                         colors=None, ax=None, sublabel=None)
+                         colors=None, ax=None, sublabel=None):
     """
     make a plot of multiple versions of rpt_elements at one node for one
     variable
@@ -45,22 +45,29 @@ def plot_versions_single(df, variable, ylabel, fontsize, lw, title=None,
     """
     plt.rc('font', weight='bold', size=fontsize)
     if not colors:
-        colors = ["#D4D5CD", "#000d29",  "#118c8b"]
+        colors = ["#D4D5CD", "#000d29", "#118c8b"]
 
     if variable == "Total Flooding":
         df = df*1000
         ax = df.plot.bar(ax=ax, color=colors, legend=False)
-        plt.tick_params(
-                        axis='x',      # changes apply to the x-axis
-                        which='both',  # major and minor ticks are affected
-                        bottom=False,  # ticks along the bottom edge are off
-                        top=False,     # ticks along the top edge are off
-                        labelbottom=False  # label is off
-                        )
+        # plt.tick_params(
+                        # axis='x',      # changes apply to the x-axis
+                        # which='both',  # major and minor ticks are affected
+                        # bottom=False,  # ticks along the bottom edge are off
+                        # top=False,     # ticks along the top edge are off
+                        # labelbottom=False  # label is off
+                        # )
         ax.set_ylim((0, df.max().max()*1.15))
+        xs = []
         for p in ax.patches:
-            val = str(round(p.get_height(),2))
-            ax.annotate(val, (p.get_x(), p.get_height() * 1.005))
+            val = str(round(p.get_height(), 2))
+            x = p.get_x()+ (p.get_width()/2)
+            y = p.get_height() * 1.005
+            ax.annotate(val, (x, y), ha='center')
+            xs.append(x)
+        ax.set_xticks(xs)
+        ax.set_xticklabels([i + 1 for i in range(len(df.columns))])
+        ax.set_xlabel('Scenario', fontsize=fontsize, weight='bold')
     else:
         for col in df.columns:
             ax.plot(df.index, df[col], label=col, lw=lw)
@@ -74,7 +81,7 @@ def plot_versions_single(df, variable, ylabel, fontsize, lw, title=None,
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
         ax.set_xlim((df.index.min(), df.index.max()))
         ax.grid(which='both', color='lightgray')
-    
+
     if sublabel:
         ax.text(0.02, 0.98, sublabel, horizontalalignment='left', 
                 verticalalignment='top', transform=ax.transAxes,
