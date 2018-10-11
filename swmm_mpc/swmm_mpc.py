@@ -37,8 +37,11 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     run_suffix: [string] will be added to the results filename
     '''
     print(locals())
-    # full file path
-    # inp_file_path = os.path.abspath(inp_file_path)
+    # save params to file
+    with open('{}log{}'.format(results_dir, run_suffix), 'w') as f:
+        f.write(str(locals()))
+        f.write('\n')
+
     # the input directory and the file name
     inp_file_dir, inp_file_name = os.path.split(inp_file_path)
     # the process file name with no extension
@@ -118,7 +121,12 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     end_time = datetime.datetime.now()
     print('simulation end: {}'.format(end_time.strftime('%Y.%m.%d.%H.%M')))
     elapsed_time = end_time - beg_time
-    print('elapsed time: {}'.format(elapsed_time.seconds))
+    elapsed_time_str = 'elapsed time: {}'.format(elapsed_time.seconds)
+    print(elapsed_time_str)
+
+    # update original inp file with found control policy
+    with open('{}log{}'.format(results_dir, run_suffix), 'a') as f:
+        f.write(elapsed_time_str)
 
     # consolidate ctl settings and save to csv file
     ctl_settings_df = pd.DataFrame(best_policy_ts)
