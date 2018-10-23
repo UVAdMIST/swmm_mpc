@@ -84,3 +84,9 @@ Then to run it, you simply call the script with python:
 ```
 python my_swmm_mpc.py
 ```
+# Dockerized code
+A Docker image with swmm_mpc and all of its dependencies can be found at [https://hub.docker.com/r/jsadler2/swmm_mpc/](https://hub.docker.com/r/jsadler2/swmm_mpc/). You would run it like so:
+
+```
+docker run -v /path/to/inputfile.inp:/path/to/inputfile.inp -v /path/to/workdir/:/path/to/workdir/ -v /path/to/results/dir/:/path/to/results/dir/ -v /path/to/run_script.py:/run_script.py jsadler2/swmm_mpc:latest python /run_script.py
+```
