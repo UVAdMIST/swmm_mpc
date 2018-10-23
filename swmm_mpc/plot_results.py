@@ -60,14 +60,15 @@ def plot_versions_single(df, variable, ylabel, fontsize, lw, title=None,
         ax.set_ylim((0, df.max().max()*1.15))
         xs = []
         for p in ax.patches:
-            val = str(round(p.get_height(), 2))
+            val = str(round(p.get_height(), 1))
             x = p.get_x()+ (p.get_width()/2)
             y = p.get_height() * 1.005
-            ax.annotate(val, (x, y), ha='center')
+            ax.annotate(val, (x, y), ha='center', weight='normal')
             xs.append(x)
         ax.set_xticks(xs)
-        ax.set_xticklabels([i + 1 for i in range(len(df.columns))])
-        ax.set_xlabel('Scenario', fontsize=fontsize, weight='bold')
+        ax.set_xticklabels([i + 1 for i in range(len(df.columns))],
+                           rotation=0)
+        ax.set_xlabel('Scenario', fontsize=fontsize, weight='normal')
     else:
         for col in df.columns:
             ax.plot(df.index, df[col], label=col, lw=lw)
@@ -76,18 +77,18 @@ def plot_versions_single(df, variable, ylabel, fontsize, lw, title=None,
         for i in range(len(lines)):
             lines[i].set_color(colors[i])
 
-        ax.set_xlabel('Time elapsed (hr)', fontsize=fontsize, weight='bold')
+        ax.set_xlabel('Time elapsed (hr)', fontsize=fontsize, weight='normal')
         ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
         ax.set_xlim((df.index.min(), df.index.max()))
-        ax.grid(which='both', color='lightgray')
+        ax.grid(which='both', color='#F0F0F0')
 
     if sublabel:
         ax.text(0.02, 0.98, sublabel, horizontalalignment='left', 
                 verticalalignment='top', transform=ax.transAxes,
                 fontsize=fontsize)
 
-    ax.set_ylabel(ylabel, fontsize=fontsize, weight='bold')
+    ax.set_ylabel(ylabel, fontsize=fontsize, weight='normal')
     if title:
         ax.set_title(title, fontsize=fontsize, weight='bold')
     ax.xaxis.set_tick_params(labelsize=fontsize)
@@ -183,10 +184,9 @@ def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx,
         counter += 1
 
     handles, labels = ax.get_legend_handles_labels()
-    fig.autofmt_xdate()
     fig.legend(handles, labels, loc='lower center', ncol=3,
                bbox_to_anchor=(0.5, 0))
     fig.tight_layout()
-    fig.subplots_adjust(bottom=0.2)
+    fig.subplots_adjust(bottom=0.2, hspace=0.7)
     fig.savefig("{}/{}_{}".format(fig_dir, "combined", sfx), dpi=300)
     plt.show()
