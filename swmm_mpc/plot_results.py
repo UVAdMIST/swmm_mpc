@@ -30,7 +30,8 @@ def get_df(rpts, ele, variable, column_names=None):
 
 
 def plot_versions_single(df, variable, ylabel, fontsize, lw, title=None,
-                         colors=None, ax=None, sublabel=None):
+                         colors=None, ax=None, sublabel=None, 
+                         linestyles=["--", "-.", "-", ":"]):
     """
     make a plot of multiple versions of rpt_elements at one node for one
     variable
@@ -45,7 +46,7 @@ def plot_versions_single(df, variable, ylabel, fontsize, lw, title=None,
     """
     plt.rc('font', weight='bold', size=fontsize)
     if not colors:
-        colors = ["#D4D5CD", "#000d29", "#118c8b"]
+        colors = ["#999999", "#000d29", "#118c8b"]
 
     if variable == "Total Flooding":
         df = df*1000
@@ -76,6 +77,7 @@ def plot_versions_single(df, variable, ylabel, fontsize, lw, title=None,
 
         for i in range(len(lines)):
             lines[i].set_color(colors[i])
+            lines[i].set_linestyle(linestyles[i])
 
         ax.set_xlabel('Time elapsed (hr)', fontsize=fontsize, weight='normal')
         ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
