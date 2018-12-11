@@ -90,3 +90,5 @@ A Docker image with swmm_mpc and all of its dependencies can be found at [https:
 ```
 docker run -v /path/to/inputfile.inp:/path/to/inputfile.inp -v /path/to/workdir/:/path/to/workdir/ -v /path/to/results/dir/:/path/to/results/dir/ -v /path/to/run_script.py:/run_script.py jsadler2/swmm_mpc:latest python /run_script.py
 ```
+# Example model 
+An example use case model is found on HydroShare: [https://www.hydroshare.org/resource/73b38d6417ac4352b9dae38a78a47d81/](https://www.hydroshare.org/resource/73b38d6417ac4352b9dae38a78a47d81/).
