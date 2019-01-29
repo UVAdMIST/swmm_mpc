@@ -11,7 +11,7 @@ pip install swmm_mpc/
 swmm\_mpc requires a special version of OWA's pyswmm. To install this do:
 
 ```
-pip install git+git://github.com/uva-hydroinformatics/pyswmm.git@feature_save_hotstart
+pip install git+https://github.com/UVAdMIST/pyswmm.git@feature_save_hotstart
 ```
 
 ## 3. Install EPASWMM5 
