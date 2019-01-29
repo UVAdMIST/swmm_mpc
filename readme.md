@@ -60,7 +60,7 @@ work_dir = "/path/to/work/"
 ngen = 4
 nindividuals = 300
 
-target_depth_dict={'St1':{'target':1, 'weight':0.1}, 'St2':{'target':1.5, 'weight':0.1}}
+target_depth_dict={'Node St1':{'target':1, 'weight':0.1}, 'Node St2':{'target':1.5, 'weight':0.1}}
 
 
 
