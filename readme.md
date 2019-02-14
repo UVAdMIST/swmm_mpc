@@ -1,5 +1,7 @@
 # swmm_mpc 
-`swmm_mpc` is a python package that can be used to perform model predictive control (MPC) for EPASWMM5 ([Environmental Protection Agency Stormwater Management Model](https://www.epa.gov/water-research/storm-water-management-model-swmm)). `swmm_mpc` relies on the [pyswmm package](https://github.com/OpenWaterAnalytics/pyswmm) which enables the step by step running of SWMM5 models through Python.  
+`swmm_mpc` is a python package that can be used to perform model predictive control (MPC) for EPASWMM5 ([Environmental Protection Agency Stormwater Management Model](https://www.epa.gov/water-research/storm-water-management-model-swmm)). `swmm_mpc` relies on the [pyswmm package](https://github.com/OpenWaterAnalytics/pyswmm) which enables the step by step running of SWMM5 models through Python.
+
+`swmm_mpc` has only been tested **Python 2.7** on **Ubuntu 16.10** and **RedHat**. The modified version of OWASWMM5 included in the `pyswmm` library was compiled on Ubuntu 16.10 and will therefore will not work in a Windows environment.
 
 # Installation
 ## 1. Install swmm_mpc
