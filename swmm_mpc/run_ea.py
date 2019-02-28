@@ -13,7 +13,7 @@ creator.create('Individual', list, fitness=creator.FitnessMin)
 pool = multiprocessing.Pool(16)
 toolbox = base.Toolbox()
 toolbox.register('map', pool.map)
-toolbox.register('attr_binary', random.randint, 0, 1)
+toolbox.register('attr_binary', random.randint, 0, 10)
 toolbox.register('mate', tools.cxTwoPoint)
 toolbox.register('mutate', tools.mutUniformInt, low=0, up=10, indpb=0.10)
 toolbox.register('select', tools.selTournament, tournsize=6)
@@ -38,7 +38,7 @@ def run_ea(ngen, nindividuals, work_dir, hs_file_path,
                     )
     policy_len = get_policy_length(control_str_ids, n_control_steps)
     toolbox.register('individual', tools.initRepeat, creator.Individual,
-                     toolbox.attr_binary)
+                     toolbox.attr_binary, policy_len)
 
     # read from the json file to initialize population if exists
     # (not first time)
@@ -145,4 +145,19 @@ def split_list(a_list, n):
     for i in range(n):
 	split_lists.append(a_list[i*portions: (i+1)*portions])	
     return split_lists
+
+def get_policy_length(control_str_ids, n_control_steps):
+    """
+    get the length of the policy. ASSUMPTION - PUMP controls are binary 1 BIT, 
+    ORIFICE and WEIR are 3 BITS
+    returns:    [int] the number of total control decisions in the policy
+    """
+    pol_len = 0
+    for ctl_id in control_str_ids:
+        ctl_type = ctl_id.split()[0]
+        if ctl_type == 'ORIFICE' or ctl_type == 'WEIR':
+            pol_len += 3*n_control_steps
+        elif ctl_type == 'PUMP':
+            pol_len += n_control_steps
+    return pol_len
 

@@ -151,6 +151,7 @@ def fmt_control_policies(control_array, control_str_ids, n_control_steps):
                                              (i+1)*n_control_steps]
     return policies
 
+
 def validate_control_str_ids(control_str_ids):
     """
     make sure the ids are ORIFICE, PUMP, or WEIR
@@ -158,7 +159,7 @@ def validate_control_str_ids(control_str_ids):
     valid_structure_types = ['ORIFICE', 'PUMP', 'WEIR']
     for ctl_id in control_str_ids:
         ctl_type = ctl_id.split()[0]
-        if ctl_id not in valid_structure_types:
+        if ctl_type not in valid_structure_types:
             raise ValueError(
                     '{} not valid ctl type. should be one of {}'.format(
                         ctl_id, valid_structure_types))
