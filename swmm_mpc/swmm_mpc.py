@@ -18,7 +18,8 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     control_horizon: [number] control horizon in hours
     control_time_step: [number] control time step in seconds
     control_str_ids: [list of strings] ids of control structures for which
-                     controls policies will be found.
+                     controls policies will be found. Each should start with
+                     one of the key words ORIFICE, PUMP, or WEIR
                      e.g., [ORIFICE R1, ORIFICE R2]
     work_dir: [string] directory where the temporary files will be created
     results_dir: [string] directory where the results will be written
@@ -41,6 +42,10 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     with open('{}log{}'.format(results_dir, run_suffix), 'w') as f:
         f.write(str(locals()))
         f.write('\n')
+
+    # check control_str_ids
+    validate_control_str_ids(control_str_ids)
+
 
     # the input directory and the file name
     inp_file_dir, inp_file_name = os.path.split(inp_file_path)
@@ -85,12 +90,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
             up.update_process_model_file(inp_process_file_path,
                                          current_dt, dt_hs_path)
 
-            # get num control steps remaining
-            # nsteps = get_nsteps_remaining(sim)
-            nsteps = n_control_steps * len(control_str_ids)
-
-            best_policy = ra.run_ea(nsteps,
-                                    ngen,
+            best_policy = ra.run_ea(ngen,
                                     nindividuals,
                                     work_dir,
                                     dt_hs_path,
@@ -150,3 +150,16 @@ def fmt_control_policies(control_array, control_str_ids, n_control_steps):
         policies[control_id] = control_array[i*n_control_steps:
                                              (i+1)*n_control_steps]
     return policies
+
+def validate_control_str_ids(control_str_ids):
+    """
+    make sure the ids are ORIFICE, PUMP, or WEIR
+    """
+    valid_structure_types = ['ORIFICE', 'PUMP', 'WEIR']
+    for ctl_id in control_str_ids:
+        ctl_type = ctl_id.split()[0]
+        if ctl_id not in valid_structure_types:
+            raise ValueError(
+                    '{} not valid ctl type. should be one of {}'.format(
+                        ctl_id, valid_structure_types))
+
