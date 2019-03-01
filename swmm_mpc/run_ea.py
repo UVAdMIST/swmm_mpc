@@ -13,7 +13,7 @@ creator.create('Individual', list, fitness=creator.FitnessMin)
 pool = multiprocessing.Pool(16)
 toolbox = base.Toolbox()
 toolbox.register('map', pool.map)
-toolbox.register('attr_binary', random.randint, 0, 10)
+toolbox.register('attr_binary', random.randint, 0, 1)
 toolbox.register('mate', tools.cxTwoPoint)
 toolbox.register('mutate', tools.mutUniformInt, low=0, up=10, indpb=0.10)
 toolbox.register('select', tools.selTournament, tournsize=6)
@@ -121,7 +121,6 @@ def seed_next_population(best_policy, nindividuals, n_controls, pop_file):
     return mutated_pop
 
 
-
 def init_population(ind_init, filename):
     """
     create initial population from json file
@@ -146,6 +145,7 @@ def split_list(a_list, n):
 	split_lists.append(a_list[i*portions: (i+1)*portions])	
     return split_lists
 
+
 def get_policy_length(control_str_ids, n_control_steps):
     """
     get the length of the policy. ASSUMPTION - PUMP controls are binary 1 BIT, 
@@ -160,4 +160,3 @@ def get_policy_length(control_str_ids, n_control_steps):
         elif ctl_type == 'PUMP':
             pol_len += n_control_steps
     return pol_len
-
