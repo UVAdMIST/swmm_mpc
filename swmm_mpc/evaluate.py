@@ -66,17 +66,60 @@ def bits_to_perc(bits):
 
 
 def bit_to_on_off(bit):
+    """
+    convert single bit to "ON" or "OFF"
+    bit:    [int] or [list] 
+    """
+    if type(bit) == list:
+        if len(bit) > 1:
+            raise ValueError('you passed more than one bit to this fxn')
+        else:
+            bit = bit[0]
     if bit == 1:
         return "ON"
     elif bit == 0:
         return "OFF"
+    else:
+        raise ValueError('was expecting 1 or 0 and got {}'.format(bit))
+
+
+def split_gene_by_ctl_ts(gene, control_str_ids, n_steps):
+    """
+    split a list of bits representing a gene into the bits that correspond with
+    each control id according to the control type for each time step
+    ASSUMPTION: 3 bits for ORIFICE or WEIR, 1 for PUMP
+    gene:               [list] bits for a gene (e.g., [1, 0, 1, 1, 1, 0, 0, 1])
+    control_str_ids:    [list] control ids (e.g., ['ORIFICE r1', 'PUMP p1'])
+    n_steps:            [int] number of control steps (e.g., 2)
+    returns:            [list of lists] [[[1, 0, 1], [1, 1, 0]], [[0], [1]]]
+    """
+    split_gene = []
+    for control_id in control_str_ids:
+        # get the control type (i.e. PUMP, WEIR, ORIFICE)
+        control_type = control_id.split()[0]
+        if control_type == 'ORIFICE' or control_type == 'WEIR':
+            bits_per_type = 3
+            # get the number of control elements that are for the current ctl
+        elif control_type == 'PUMP':
+            bits_per_type = 1
+        # the number of bits per control structure
+        n_bits = bits_per_type*n_steps
+        # get the segment for the control
+        gene_seg = gene[:n_bits]
+        # split to get the different time steps
+        gene_seg_per_ts = split_list(gene_seg, n_steps) 
+        # add the gene segment to the overall list
+        split_gene.append(gene_seg_per_ts)
+        # move the beginning of the gene to the end of the current ctl segment
+        gene = gene[n_bits:]
+    return split_gene
 
 
 def split_list(a_list, n):
     """
     split one list into n lists of equal size. In this case, we are splitting
-    the list that represents all of the policies so that each control structure 
-    has its own list
+    the list that represents the policy of a single each control structure
+    so that each time step is separate
     """
     portions = len(a_list)/n
     split_lists = []
@@ -89,28 +132,23 @@ def gene_to_policy_dict(gene, control_str_ids, n_control_steps):
     """
     converts a gene to a policy dictionary that with the format specified in
     up.update_controls_and_hotstart
-    ASSUMPTION: 3 bits for ORIFICE or WEIR, 1 for PUMP
+    format a policy given the control_str_ids and splitted_gene
+    control_str_ids:    [list] control ids (e.g., ['ORIFICE r1', 'PUMP p1'])
+    splitted_gene:      [list of lists] [[[1, 0, 1], [1, 1, 0]], [[0], [1]]]
+    returns:            [dict] (e.g., {'ORIFICE r1'}
     """
     fmted_policies = dict()
-    for control_id in control_str_ids:
+    splitted_gene = split_gene_by_ctl_ts(gene, control_str_ids,
+                                         n_control_steps)
+    for i, control_id in enumerate(control_str_ids):
         control_type = control_id.split()[0]
+        seg = splitted_gene[i]
         if control_type == 'ORIFICE' or control_type == 'WEIR':
-            bits_per_type = 3
-            # get the number of control elements that are for the current ctl
-            n_ctl_elements = bits_per_type*n_control_steps
-            # take that number of elements from the overall gene string
-            gene_seg = gene[:n_ctl_elements]
-            # split that into lists, one for each ctl time step
-            gene_seg_split = split_list(gene_seg, n_control_steps)
             # change the lists of bits into percent openings
-            fmtd_seg = [bits_to_perc(seg) for seg in gene_seg_split]
+            fmtd_seg = [bits_to_perc(setting) for setting in seg]
         elif control_type == 'PUMP':
-            bits_per_type = 1
-            n_ctl_elements = bits_per_type*n_control_steps
-            gene_seg = gene[:n_ctl_elements]
-            fmtd_seg = [bit_to_on_off(bit) for bit in gene_seg]
-        # move the beginning of the gene to the end of the current ctl segment
-        gene = gene[n_ctl_elements:]
+            # change the lists of bits into on/off
+            fmtd_seg = [bit_to_on_off(bit[0]) for bit in seg]
         fmted_policies[control_id] = fmtd_seg
     return fmted_policies
 
