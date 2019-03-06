@@ -46,6 +46,10 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     # check control_str_ids
     validate_control_str_ids(control_str_ids)
 
+    # make paths absolute
+    inp_file_path = os.path.abspath(inp_file_path)
+    work_dir = os.path.abspath(work_dir)
+    results_dir = os.path.abspath(results_dir)
 
     # the input directory and the file name
     inp_file_dir, inp_file_name = os.path.split(inp_file_path)
