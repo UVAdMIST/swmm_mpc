@@ -83,22 +83,22 @@ def get_control_rule_string(control_time_step, policies):
     """
     Write control rules from the policies.
     """
-    new_lines = ["[CONTROLS] \n"]
+    new_lines = ["[CONTROLS]\n"]
     rule_number = 0
     # control_time_step is in seconds. convert to hours
     control_time_step_hours = control_time_step/3600.
     for structure_id in policies:
         structure_type = structure_id.split()[0]
         for i, policy_step in enumerate(policies[structure_id]):
-            l1 = "RULE R{} \n".format(rule_number)
-            l2 = "IF SIMULATION TIME < {:.3f} \n".format(
+            l1 = "RULE R{}\n".format(rule_number)
+            l2 = "IF SIMULATION TIME < {:.3f}\n".format(
                     (i+1) * control_time_step_hours)
             # check the structure type to write 'SETTINGS' or 'STATUS'
-            if structure_type == 'ORIFICE' or 'WEIR':
+            if structure_type == 'ORIFICE' or structure_type == 'WEIR':
                 sttg_or_status = 'SETTING'
             elif structure_type == 'PUMP':
                 sttg_or_status = 'STATUS'
-            l3 = "THEN {} {} = {} \n".format(structure_id, sttg_or_status,
+            l3 = "THEN {} {} = {}\n".format(structure_id, sttg_or_status,
                                              policy_step)
             l4 = "\n"
             new_lines.extend([l1, l2, l3, l4])
