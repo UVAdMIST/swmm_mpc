@@ -5,6 +5,7 @@ import pandas as pd
 import pyswmm
 from pyswmm import Simulation, Links
 import update_process_model_input_file as up
+import evaluate as ev
 import run_ea as ra
 
 
@@ -67,8 +68,8 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
 
     # record when simulation begins
     beg_time = datetime.datetime.now()
-    beg_time_str = beg_time.strftime('%Y.%m.%d.%H.%M')
-    print("Simulation start: {}".format(beg_time_str))
+    run_beg_time_str = beg_time.strftime('%Y.%m.%d.%H.%M')
+    print("Simulation start: {}".format(run_beg_time_str))
     best_policy_ts = []
 
     # make sure there is no control rules in inp file
@@ -94,33 +95,37 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
             up.update_process_model_file(inp_process_file_path,
                                          current_dt, dt_hs_path)
 
-            best_policy = ra.run_ea(ngen,
-                                    nindividuals,
-                                    work_dir,
-                                    dt_hs_path,
-                                    inp_process_file_path,
-                                    current_dt_str,
-                                    control_time_step,
-                                    n_control_steps,
-                                    control_str_ids,
-                                    target_depth_dict,
-                                    node_flood_weight_dict,
-                                    flood_weight,
-                                    dev_weight)
+            best_policy, cost = ra.run_ea(ngen,
+                                          nindividuals,
+                                          work_dir,
+                                          dt_hs_path,
+                                          inp_process_file_path,
+                                          current_dt_str,
+                                          control_time_step,
+                                          n_control_steps,
+                                          control_str_ids,
+                                          target_depth_dict,
+                                          node_flood_weight_dict,
+                                          flood_weight,
+                                          dev_weight)
 
-            best_policy_fmt = fmt_control_policies(best_policy,
-                                                   control_str_ids,
-                                                   n_control_steps)
+            best_policy_fmt = ev.gene_to_policy_dict(best_policy,
+                                                     control_str_ids,
+                                                     n_control_steps)
             for control_id, policy in best_policy_fmt.iteritems():
-                best_policy_per = policy[0]/10.
+                next_setting = policy[0]
                 best_policy_ts.append({'setting_{}'.format(control_id):
-                                       best_policy_per,
+                                       next_setting,
                                        'datetime': current_dt})
 
                 # implement best policy
                 # from for example "ORIFICE R1" to "R1"
                 control_id_short = control_id.split()[-1]
-                link_obj[control_id_short].target_setting = best_policy_per
+                link_obj[control_id_short].target_setting = next_setting
+
+            # if we are getting a policy with no cost then it's perfect
+            if cost == 0:
+                break
 
     end_time = datetime.datetime.now()
     print('simulation end: {}'.format(end_time.strftime('%Y.%m.%d.%H.%M')))
@@ -128,10 +133,39 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     elapsed_time_str = 'elapsed time: {}'.format(elapsed_time.seconds)
     print(elapsed_time_str)
 
-    # update original inp file with found control policy
+    # write the elapsed time to the end of the log file
     with open('{}log{}'.format(results_dir, run_suffix), 'a') as f:
         f.write(elapsed_time_str)
 
+    results_file = save_results_file(best_policy_ts, control_str_ids,
+                                     results_dir, sim_start_time,
+                                     run_beg_time_str, run_suffix)
+
+    # update original inp file with found control policy
+    up.update_controls_with_policy(inp_file_path, results_file)
+
+
+def save_results_file(best_policy_ts, control_str_ids, results_dir,
+                      sim_start_time, run_beg_time_str, run_suffix):
+    """
+    Convert policy time series to dataframe and save to csv
+
+    Parameters
+    ----------
+    best_policy_ts : list of dicts
+        list of dicts where the key/values are "setting_{control id}"/{setting}
+        and "datetime"/{datetime}
+    control_str_ids : list of str
+        see documentation in "run_swmm_mpc"
+    results_dir : str
+        the directory where the csv will be saved
+    sim_start_time : datetime object
+        the datetime of the start time in the simulation
+    run_beg_time_str : str
+        the real time when the swmm_mpc run started
+    run_suffix : str
+        the run suffix that will be appended to the csv file name
+    """
     # consolidate ctl settings and save to csv file
     ctl_settings_df = pd.DataFrame(best_policy_ts)
     ctl_settings_df = ctl_settings_df.pivot_table(index='datetime')
@@ -140,20 +174,25 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     sim_start_dt = pd.to_datetime(sim_start_time)
     ctl_settings_df.loc[sim_start_dt] = [1 for i in control_str_ids]
     ctl_settings_df.sort_index(inplace=True)
-    results_file = '{}ctl_results_{}{}.csv'.format(results_dir, beg_time_str,
+    results_file = '{}ctl_results_{}{}.csv'.format(results_dir,
+                                                   run_beg_time_str,
                                                    run_suffix)
     ctl_settings_df.to_csv(results_file)
-
-    # update original inp file with found control policy
-    up.update_controls_with_policy(inp_file_path, results_file)
+    return results_file
 
 
-def fmt_control_policies(control_array, control_str_ids, n_control_steps):
-    policies = dict()
-    for i, control_id in enumerate(control_str_ids):
-        policies[control_id] = control_array[i*n_control_steps:
-                                             (i+1)*n_control_steps]
-    return policies
+def get_initial_states(control_str_ids):
+    """
+    Get list of initial states. ASSUME initial states for ORIFICE/WEIR is 1
+        (open) and for PUMPS is "OFF"
+    """
+    initial_states = []
+    for ctl in control_str_ids:
+        control_type = ctl.split()[0]
+        if control_type == 'ORIFICE' or control_type == 'WEIR':
+            initial_states.append(1)
+        elif control_type == 'PUMP':
+            initial_states.append('OFF')
 
 
 def validate_control_str_ids(control_str_ids):
@@ -166,5 +205,4 @@ def validate_control_str_ids(control_str_ids):
         if ctl_type not in valid_structure_types:
             raise ValueError(
                     '{} not valid ctl type. should be one of {}'.format(
-                        ctl_id, valid_structure_types))
-
+                     ctl_id, valid_structure_types))

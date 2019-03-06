@@ -62,7 +62,7 @@ def run_ea(ngen, nindividuals, work_dir, hs_file_path,
                                        verbose=True)
     seed_next_population(hof[0], nindividuals, control_str_ids, pop_file,
                          n_control_steps)
-    return hof[0]
+    return hof[0], ev.evaluate(hof[0])
 
 
 def write_pop_to_file(population, pop_file):
