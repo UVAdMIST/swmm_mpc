@@ -10,7 +10,7 @@ import evaluate as ev
 creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
 creator.create('Individual', list, fitness=creator.FitnessMin)
 
-pool = multiprocessing.Pool(8)
+pool = multiprocessing.Pool(20)
 toolbox = base.Toolbox()
 toolbox.register('map', pool.map)
 toolbox.register('attr_binary', random.randint, 0, 1)
@@ -87,13 +87,16 @@ def mutate_pop(best_policy, nindividuals, control_str_ids, n_steps):
         for seg_by_ctl in split_lists:
             # disregard the first control step since we need future policy
             seg_by_ctl = seg_by_ctl[1:]
+            # set setting length to one in case there is only one setting 
+            setting_length = 1
             # mutate the remaining settings
             mutated_ctl_segment = []
             for seg_by_ts in seg_by_ctl:
                 tools.mutFlipBit(seg_by_ts, 0.2)
                 mutated_ctl_segment.extend(seg_by_ts)
+                setting_length = len(seg_by_ts)
             # add a random setting for the last time step in the future policy
-            rand_sttng = [random.randint(0, 1) for i in range(len(seg_by_ts))]
+            rand_sttng = [random.randint(0, 1) for i in range(setting_length)]
             mutated_ctl_segment.extend(rand_sttng)
             # add the new policy for the control structure to the overall pol
             mutated_ind.extend(mutated_ctl_segment)
