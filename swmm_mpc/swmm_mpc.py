@@ -145,21 +145,23 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
 
 def update_policy_ts_list(fmtd_policy, current_dt, control_time_step,
                           best_policy_ts, cost):
-        # record the rest of the control policy
-        for control_id, policy in fmtd_policy.iteritems():
-            # first setting has already been recorded, so disregard
-            for i, setting in enumerate(policy):
-                # increase time step
-                setting_dt = current_dt + i * control_time_step
-                # append to list
-                best_policy_ts.append({'setting_{}'.format(control_id):
-                                       setting,
-                                       'datetime': setting_dt})
-                # if cost is zero only do the first one
-                # this should be the case for all but the last case
-                if cost == 0:
-                    return best_policy_ts
-        return best_policy_ts
+    # record the rest of the control policy
+    for control_id, policy in fmtd_policy.iteritems():
+        # first setting has already been recorded, so disregard
+        for i, setting in enumerate(policy):
+            # increase time step
+            inc_seconds = i * control_time_step
+            inc_time = datetime.timedelta(seconds=inc_seconds)
+            setting_dt = current_dt + inc_time
+            # append to list
+            best_policy_ts.append({'setting_{}'.format(control_id):
+                                   setting,
+                                   'datetime': setting_dt})
+            # if cost is zero only do the first one
+            # this should be the case for all but the last case
+            if cost == 0:
+                return best_policy_ts
+    return best_policy_ts
 
 
 def implement_control_policy(link_obj, best_policy_fmt):
