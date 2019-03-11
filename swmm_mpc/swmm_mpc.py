@@ -113,21 +113,13 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
             best_policy_fmt = ev.gene_to_policy_dict(best_policy,
                                                      control_str_ids,
                                                      n_control_steps)
-            for control_id, policy in best_policy_fmt.iteritems():
-                next_setting = policy[0]
-                best_policy_ts.append({'setting_{}'.format(control_id):
-                                       next_setting,
-                                       'datetime': current_dt})
+            best_policy_ts = update_policy_ts_list(best_policy_fmt,
+                                                   current_dt,
+                                                   control_time_step,
+                                                   best_policy_ts,
+                                                   cost)
 
-                # implement best policy
-                # from for example "ORIFICE R1" to "R1"
-                if next_setting == 'ON':
-                    next_setting = 1
-                elif next_setting =='OFF':
-                    next_setting = 0
-
-                control_id_short = control_id.split()[-1]
-                link_obj[control_id_short].target_setting = next_setting
+            implement_control_policy(link_obj, best_policy_fmt)
 
             # if we are getting a policy with no cost then it's perfect
             if cost == 0:
@@ -149,6 +141,40 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
 
     # update original inp file with found control policy
     up.update_controls_with_policy(inp_file_path, results_file)
+
+
+def update_policy_ts_list(fmtd_policy, current_dt, control_time_step,
+                          best_policy_ts, cost):
+        # record the rest of the control policy
+        for control_id, policy in fmtd_policy.iteritems():
+            # first setting has already been recorded, so disregard
+            for i, setting in enumerate(policy):
+                # increase time step
+                setting_dt = current_dt + i * control_time_step
+                # append to list
+                best_policy_ts.append({'setting_{}'.format(control_id):
+                                       setting,
+                                       'datetime': setting_dt})
+                # if cost is zero only do the first one
+                # this should be the case for all but the last case
+                if cost == 0:
+                    return best_policy_ts
+        return best_policy_ts
+
+
+def implement_control_policy(link_obj, best_policy_fmt):
+    for control_id, policy in best_policy_fmt.iteritems():
+        next_setting = policy[0]
+
+        # from for example "ORIFICE R1" to "R1"
+        control_id_short = control_id.split()[-1]
+        # implement best policy
+        if next_setting == 'ON':
+            next_setting = 1
+        elif next_setting == 'OFF':
+            next_setting = 0
+
+        link_obj[control_id_short].target_setting = next_setting
 
 
 def save_results_file(best_policy_ts, control_str_ids, results_dir,
@@ -173,13 +199,12 @@ def save_results_file(best_policy_ts, control_str_ids, results_dir,
         the run suffix that will be appended to the csv file name
     """
     # consolidate ctl settings and save to csv file
-    print best_policy_ts
     ctl_settings_df = pd.DataFrame(best_policy_ts)
     ctl_settings_df = ctl_settings_df.groupby('datetime').first()
     ctl_settings_df.index = pd.DatetimeIndex(ctl_settings_df.index)
     # add a row at the beginning of the policy since controls start open
     sim_start_dt = pd.to_datetime(sim_start_time)
-    print ctl_settings_df
+    print(ctl_settings_df)
     initial_states = get_initial_states(control_str_ids)
     ctl_settings_df.loc[sim_start_dt] = initial_states
     ctl_settings_df.sort_index(inplace=True)
