@@ -40,7 +40,8 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     '''
     print(locals())
     # save params to file
-    with open('{}log{}'.format(results_dir, run_suffix), 'w') as f:
+    log_file = os.path.join(results_dir, 'log_{}'.format(run_suffix))
+    with open(log_file, 'w') as f:
         f.write(str(locals()))
         f.write('\n')
 
@@ -120,6 +121,11 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
 
                 # implement best policy
                 # from for example "ORIFICE R1" to "R1"
+                if next_setting == 'ON':
+                    next_setting = 1
+                elif next_setting =='OFF':
+                    next_setting = 0
+
                 control_id_short = control_id.split()[-1]
                 link_obj[control_id_short].target_setting = next_setting
 
@@ -134,7 +140,7 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     print(elapsed_time_str)
 
     # write the elapsed time to the end of the log file
-    with open('{}log{}'.format(results_dir, run_suffix), 'a') as f:
+    with open(log_file, 'a') as f:
         f.write(elapsed_time_str)
 
     results_file = save_results_file(best_policy_ts, control_str_ids,
@@ -167,18 +173,20 @@ def save_results_file(best_policy_ts, control_str_ids, results_dir,
         the run suffix that will be appended to the csv file name
     """
     # consolidate ctl settings and save to csv file
+    print best_policy_ts
     ctl_settings_df = pd.DataFrame(best_policy_ts)
-    ctl_settings_df = ctl_settings_df.pivot_table(index='datetime')
+    ctl_settings_df = ctl_settings_df.groupby('datetime').first()
     ctl_settings_df.index = pd.DatetimeIndex(ctl_settings_df.index)
     # add a row at the beginning of the policy since controls start open
     sim_start_dt = pd.to_datetime(sim_start_time)
-    ctl_settings_df.loc[sim_start_dt] = [1 for i in control_str_ids]
+    print ctl_settings_df
+    initial_states = get_initial_states(control_str_ids)
+    ctl_settings_df.loc[sim_start_dt] = initial_states
     ctl_settings_df.sort_index(inplace=True)
-    results_file = '{}ctl_results_{}{}.csv'.format(results_dir,
-                                                   run_beg_time_str,
-                                                   run_suffix)
-    ctl_settings_df.to_csv(results_file)
-    return results_file
+    results_file = 'ctl_results_{}{}.csv'.format(run_beg_time_str, run_suffix)
+    results_path = os.path.join(results_dir, results_file)
+    ctl_settings_df.to_csv(results_path)
+    return results_path
 
 
 def get_initial_states(control_str_ids):
@@ -193,6 +201,7 @@ def get_initial_states(control_str_ids):
             initial_states.append(1)
         elif control_type == 'PUMP':
             initial_states.append('OFF')
+    return initial_states
 
 
 def validate_control_str_ids(control_str_ids):
