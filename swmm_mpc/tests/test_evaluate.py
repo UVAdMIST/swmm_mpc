@@ -13,7 +13,7 @@ class test_evaluate(unittest.TestCase):
         self.assertEqual(cost, 0.320)
 
     def test_get_flood_cost_dict(self):
-        node_fld_wgt_dict = {"J3":1, "St1":1, "St2":1}
+        node_fld_wgt_dict = {"J3": 1, "St1": 1, "St2": 1}
         cost = evaluate.get_flood_cost(self.rpt, node_fld_wgt_dict)
         self.assertEqual(cost, 0.640)
 
@@ -40,6 +40,15 @@ class test_evaluate(unittest.TestCase):
         bit_len = 8
         max_val = evaluate.bits_max_val(bit_len)
         self.assertEqual(max_val, 255)
+
+    def test_list_to_policy(self):
+        gene = [0.4, 0.2, 0.1, 0.6, 0.2, 0]
+        n_ctl_steps = 3
+        ctl_str_ids = ["ORIFICE r1", "PUMP p1"]
+        policy = evaluate.list_to_policy(gene, ctl_str_ids, n_ctl_steps)
+        # print (policy)
+        self.assertEqual(policy, {'ORIFICE r1': [0.4, 0.2, 0.1],
+                                  'PUMP p1': ['ON', 'OFF', 'OFF']})
 
 
 if __name__ == '__main__':

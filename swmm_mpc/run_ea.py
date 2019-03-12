@@ -5,6 +5,7 @@ import multiprocessing
 from deap import base, creator, tools, algorithms
 import numpy as np
 import evaluate as ev
+import swmm_mpc as sm
 
 
 creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
@@ -19,24 +20,10 @@ toolbox.register('mutate', tools.mutFlipBit, indpb=0.20)
 toolbox.register('select', tools.selTournament, tournsize=6)
 
 
-def run_ea(ngen, nindividuals, work_dir, hs_file_path,
-           inp_process_file_path, sim_dt, control_time_step, n_control_steps,
-           control_str_ids, target_depth_dict, node_flood_weight_dict,
-           flood_weight, dev_weight):
-    toolbox.register('evaluate',
-                     ev.evaluate,
-                     hs_file_path=hs_file_path,
-                     process_file_path=inp_process_file_path,
-                     sim_dt=sim_dt,
-                     control_time_step=control_time_step,
-                     n_control_steps=n_control_steps,
-                     control_str_ids=control_str_ids,
-                     node_flood_weight_dict=node_flood_weight_dict,
-                     target_depth_dict=target_depth_dict,
-                     flood_weight=flood_weight,
-                     dev_weight=dev_weight
-                     )
-    policy_len = get_policy_length(control_str_ids, n_control_steps)
+def run_ea(work_dir, **ga_params):
+    toolbox.register('evaluate', ev.evaluate)
+    policy_len = get_policy_length(sm.glo_control_str_ids,
+                                   sm.glo_n_control_steps)
     toolbox.register('individual', tools.initRepeat, creator.Individual,
                      toolbox.attr_binary, policy_len)
 
@@ -50,7 +37,7 @@ def run_ea(ngen, nindividuals, work_dir, hs_file_path,
     else:
         toolbox.register('population', tools.initRepeat, list,
                          toolbox.individual)
-        pop = toolbox.population(n=nindividuals)
+        pop = toolbox.population(n=ga_params['nindividuals'])
 
     hof = tools.HallOfFame(1)
     stats = tools.Statistics(lambda ind: ind.fitness.values)
@@ -58,10 +45,10 @@ def run_ea(ngen, nindividuals, work_dir, hs_file_path,
     stats.register('min', np.min)
     stats.register('max', np.max)
     pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2,
-                                       ngen=ngen, stats=stats, halloffame=hof,
-                                       verbose=True)
-    seed_next_population(hof[0], nindividuals, control_str_ids, pop_file,
-                         n_control_steps)
+                                       ngen=ga_params['ngen'], stats=stats,
+                                       halloffame=hof, verbose=True)
+    seed_next_population(hof[0], ga_params['nindividuals'],
+                         sm.glo_control_str_ids, pop_file,sm.glo_n_control_steps)
     min_cost = min(logbook.select("min"))
     return hof[0], min_cost
 
@@ -87,7 +74,7 @@ def mutate_pop(best_policy, nindividuals, control_str_ids, n_steps):
         for seg_by_ctl in split_lists:
             # disregard the first control step since we need future policy
             seg_by_ctl = seg_by_ctl[1:]
-            # set setting length to one in case there is only one setting 
+            # set setting length to one in case there is only one setting
             setting_length = 1
             # mutate the remaining settings
             mutated_ctl_segment = []

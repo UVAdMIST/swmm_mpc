@@ -7,13 +7,25 @@ from pyswmm import Simulation, Links
 import update_process_model_input_file as up
 import evaluate as ev
 import run_ea as ra
+# import run_baeopt as bo
+
+# declare global variables that will be used by the optimization methods
+glo_inp_process_file_path = ''
+glo_control_time_step = 0
+glo_control_str_ids = []
+glo_n_control_steps = 0
+glo_opt_method = ''
+glo_target_depth_dict = None
+glo_node_flood_weight_dict = None
+glo_flood_weight = 1
+glo_dev_weight = 1
 
 
 def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
-                 control_str_ids, work_dir, results_dir,
-                 target_depth_dict=None, node_flood_weight_dict=None,
-                 flood_weight=1, dev_weight=1, ngen=7, nindividuals=100,
-                 run_suffix=''):
+                 control_str_ids, work_dir, results_dir, opt_method,
+                 optimization_params, run_suffix='', target_depth_dict=None,
+                 node_flood_weight_dict=None, flood_weight=1, dev_weight=1,
+                 ):
     '''
     inp_file_path: [string] path to .inp file
     control_horizon: [number] control horizon in hours
@@ -24,6 +36,15 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                      e.g., [ORIFICE R1, ORIFICE R2]
     work_dir: [string] directory where the temporary files will be created
     results_dir: [string] directory where the results will be written
+    opt_method: [string] optimization method. Currently supported methods are
+                         'genetic_algorithm', and 'bayesian_opt'
+    optimization_params: [dict] dictionary with key values that will be passed
+                         to the optimization function
+                         for GA this includes
+                            * ngen: [int] number of generations for GA
+                            * nindividuals: [int] number of individuals for
+                                                  initial generation in GA
+    run_suffix: [string] will be added to the results filename
     target_depth_dict: [dict] dictionary where the keys are the nodeids and
                        the values are a dictionary. The inner dictionary has
                        two keys, 'target', and 'weight'. These values specify
@@ -34,11 +55,24 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                             and the values are the relative weights for
                             weighting the amount of flooding for a given node.
                             e.g., {'st1': 10, 'J3': 1}
-    ngen: [int] number of generations for GA
-    nindividuals: [int] number of individuals for initial generation in GA
-    run_suffix: [string] will be added to the results filename
     '''
     print(locals())
+    # populate initial global params
+    global glo_control_time_step
+    glo_control_time_step = control_time_step
+    global glo_control_str_ids
+    glo_control_str_ids = control_str_ids
+    global glo_opt_method
+    glo_opt_method = opt_method
+    global glo_target_depth_dict
+    glo_target_depth_dict = target_depth_dict
+    global glo_node_flood_weight_dict
+    glo_node_flood_weight_dict = node_flood_weight_dict
+    global glo_flood_weight
+    glo_flood_weight = flood_weight
+    global glo_dev_weight
+    glo_dev_weight = dev_weight
+
     # save params to file
     log_file = os.path.join(results_dir, 'log_{}'.format(run_suffix))
     with open(log_file, 'w') as f:
@@ -59,13 +93,17 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
     inp_process_file_base = inp_file_name.replace('.inp', '_process')
     # the process .inp file name
     inp_process_file_inp = inp_process_file_base + '.inp'
+    global glo_inp_process_file_path
     inp_process_file_path = os.path.join(work_dir, inp_process_file_inp)
+    glo_inp_process_file_path = inp_process_file_path
     # copy input file to process file name
     copyfile(inp_file_path, inp_process_file_path)
 
     pyswmm.lib.use('libswmm5_hs.so')
 
+    global glo_n_control_steps
     n_control_steps = int(control_horizon*3600/control_time_step)
+    glo_n_control_steps = n_control_steps
 
     # record when simulation begins
     beg_time = datetime.datetime.now()
@@ -96,19 +134,15 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
             up.update_process_model_file(inp_process_file_path,
                                          current_dt, dt_hs_path)
 
-            best_policy, cost = ra.run_ea(ngen,
-                                          nindividuals,
-                                          work_dir,
-                                          dt_hs_path,
-                                          inp_process_file_path,
-                                          current_dt_str,
-                                          control_time_step,
-                                          n_control_steps,
-                                          control_str_ids,
-                                          target_depth_dict,
-                                          node_flood_weight_dict,
-                                          flood_weight,
-                                          dev_weight)
+            print(ev.evaluate([0, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1 ]))
+
+            if opt_method == 'genetic_algorithm':
+                best_policy, cost = ra.run_ea(work_dir, **optimization_params)
+            elif opt_method == 'bayesian_opt':
+                pass
+                # best_policy, cost = bo.run_baeopt(optimization_params)
+            else:
+                raise ValueError('{} not valid opt method'.format(opt_method))
 
             best_policy_fmt = ev.gene_to_policy_dict(best_policy,
                                                      control_str_ids,

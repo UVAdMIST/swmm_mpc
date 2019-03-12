@@ -38,7 +38,6 @@ def update_process_model_file(inp_file, new_date_time, hs_file):
 
 
 def find_section(lines, section_name):
-    # check if CONTROL section is in the input file
     start_line = None
     end_line = None
     for i, l in enumerate(lines):
