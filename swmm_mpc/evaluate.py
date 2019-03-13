@@ -170,14 +170,19 @@ def list_to_policy(policy, control_str_ids, n_control_steps):
     return fmted_policies
 
 
-def format_policies(policy, control_str_ids, n_control_steps):
-    if sm.glo_opt_method == 'genetic_algorithm':
+def format_policies(policy, control_str_ids, n_control_steps, opt_method):
+    if opt_method == 'genetic_algorithm':
         return gene_to_policy_dict(policy[0], control_str_ids, n_control_steps)
-    elif sm.glo_opt_method == 'bayesian_opt':
+    elif opt_method == 'bayesian_opt':
         return list_to_policy(policy, control_str_ids, n_control_steps)
 
 
 def evaluate(*individual):
+    """
+    evaluate the performance of an individual given the inp file of the process
+    model, the individual, the control params (ctl_str_ids, horizon, step),
+    and the cost function params (dev_weight/dict, flood weight/dict)
+    """
     FNULL = open(os.devnull, 'w')
     # prep files
     # make process model tmp file
@@ -185,17 +190,15 @@ def evaluate(*individual):
         string.ascii_lowercase + string.digits) for _ in range(9))
 
     # make a copy of the process model input file
-    proc_file_dir, proc_file_name = os.path.split(sm.glo_inp_process_file_path)
+    proc_file_dir, proc_file_name = os.path.split(sm.run.inp_process_file_path)
     tmp_proc_base = proc_file_name.replace('.inp',
-                                           '_tmp_{}'.format(
-                                           rand_string
-                                           ))
+                                           '_tmp_{}'.format(rand_string))
     tmp_proc_inp = os.path.join(proc_file_dir, tmp_proc_base + '.inp')
     tmp_proc_rpt = os.path.join(proc_file_dir, tmp_proc_base + '.rpt')
-    copyfile(sm.glo_inp_process_file_path, tmp_proc_inp)
+    copyfile(sm.run.inp_process_file_path, tmp_proc_inp)
 
     # make copy of hs file
-    hs_file_path = up.read_hs_filename(sm.glo_inp_process_file_path)
+    hs_file_path = up.read_hs_filename(sm.run.inp_process_file_path)
     hs_file_name = os.path.split(hs_file_path)[1]
     tmp_hs_file_name = hs_file_name.replace('.hsf',
                                             '_{}.hsf'.format(rand_string))
@@ -204,12 +207,12 @@ def evaluate(*individual):
     copyfile(hs_file_path, tmp_hs_file)
 
     # format policies
-    fmted_policies = format_policies(individual, sm.glo_control_str_ids,
-                                     sm.glo_n_control_steps)
+    fmted_policies = format_policies(individual, sm.run.ctl_str_ids,
+                                     sm.run.n_ctl_steps, sm.run.opt_method)
 
     # update controls
     up.update_controls_and_hotstart(tmp_proc_inp,
-                                    sm.glo_control_time_step,
+                                    sm.run.ctl_time_step,
                                     fmted_policies,
                                     tmp_hs_file)
 
@@ -226,13 +229,13 @@ def evaluate(*individual):
     rpt = rpt_ele('{}'.format(tmp_proc_rpt))
 
     # get flooding costs
-    node_fld_cost = get_flood_cost(rpt, sm.glo_node_flood_weight_dict)
+    node_fld_cost = get_flood_cost(rpt, sm.run.node_flood_weight_dict)
 
     # get deviation costs
-    deviation_cost = get_deviation_cost(rpt, sm.glo_target_depth_dict)
+    deviation_cost = get_deviation_cost(rpt, sm.run.glo_target_depth_dict)
 
     # convert the contents of the output file into a cost
-    cost = sm.glo_flood_weight*node_fld_cost + sm.glo_dev_weight*deviation_cost
+    cost = sm.run.flood_weight*node_fld_cost + sm.run.dev_weight*deviation_cost
     os.remove(tmp_proc_inp)
     os.remove(tmp_proc_rpt)
     os.remove(tmp_hs_file)

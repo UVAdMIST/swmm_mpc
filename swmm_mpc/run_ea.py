@@ -8,22 +8,25 @@ import evaluate as ev
 import swmm_mpc as sm
 
 
-creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
-creator.create('Individual', list, fitness=creator.FitnessMin)
+def run_ea(work_dir, config_file, **ga_params):
+    creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
+    creator.create('Individual', list, fitness=creator.FitnessMin)
 
-pool = multiprocessing.Pool(20)
-toolbox = base.Toolbox()
-toolbox.register('map', pool.map)
-toolbox.register('attr_binary', random.randint, 0, 1)
-toolbox.register('mate', tools.cxTwoPoint)
-toolbox.register('mutate', tools.mutFlipBit, indpb=0.20)
-toolbox.register('select', tools.selTournament, tournsize=6)
-
-
-def run_ea(work_dir, **ga_params):
+    print config_file
+    pool = multiprocessing.Pool(2,
+                                initializer=sm.get_global_run,
+                                initargs=(config_file,)
+                                )
+    toolbox = base.Toolbox()
+    toolbox.register('map', pool.map)
+    toolbox.register('attr_binary', random.randint, 0, 1)
+    toolbox.register('mate', tools.cxTwoPoint)
+    toolbox.register('mutate', tools.mutFlipBit, indpb=0.20)
+    toolbox.register('select', tools.selTournament, tournsize=6)
     toolbox.register('evaluate', ev.evaluate)
-    policy_len = get_policy_length(sm.glo_control_str_ids,
-                                   sm.glo_n_control_steps)
+
+    policy_len = get_policy_length(sm.run.ctl_str_ids,
+                                   sm.run.n_ctl_steps)
     toolbox.register('individual', tools.initRepeat, creator.Individual,
                      toolbox.attr_binary, policy_len)
 
@@ -48,7 +51,7 @@ def run_ea(work_dir, **ga_params):
                                        ngen=ga_params['ngen'], stats=stats,
                                        halloffame=hof, verbose=True)
     seed_next_population(hof[0], ga_params['nindividuals'],
-                         sm.glo_control_str_ids, pop_file,sm.glo_n_control_steps)
+                         sm.run.ctl_str_ids, pop_file, sm.run.n_ctl_steps)
     min_cost = min(logbook.select("min"))
     return hof[0], min_cost
 
@@ -59,6 +62,11 @@ def write_pop_to_file(population, pop_file):
     """
     with open(pop_file, 'w') as myfile:
         json.dump(population, myfile)
+
+
+# def evaluate_ea(individual):
+    # cost = ev.evaluate(individual)
+    # return cost,
 
 
 def mutate_pop(best_policy, nindividuals, control_str_ids, n_steps):
