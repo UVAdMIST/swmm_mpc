@@ -148,6 +148,10 @@ def run_swmm_mpc(config_file):
                                                    best_policy_ts,
                                                    cost)
 
+            results_file = save_results_file(best_policy_ts, run.ctl_str_ids,
+                                             run.results_dir, sim_start_time,
+                                             run_beg_time_str, run.run_suffix)
+
             implement_control_policy(link_obj, best_policy_fmt)
 
             # if we are getting a policy with no cost then it's perfect
@@ -163,10 +167,6 @@ def run_swmm_mpc(config_file):
     # write the elapsed time to the end of the log file
     with open(run.log_file, 'a') as f:
         f.write(elapsed_time_str)
-
-    results_file = save_results_file(best_policy_ts, run.ctl_str_ids,
-                                     run.results_dir, sim_start_time,
-                                     run_beg_time_str, run.run_suffix)
 
     # update original inp file with found control policy
     up.update_controls_with_policy(run.inp_file_path, results_file)
@@ -186,10 +186,10 @@ def update_policy_ts_list(fmtd_policy, current_dt, ctl_time_step,
             best_policy_ts.append({'setting_{}'.format(ctl_id):
                                    setting,
                                    'datetime': setting_dt})
-            # if cost is zero only do the first one
+            # if cost is not zero only do the first one
             # this should be the case for all but the last case
-            if cost == 0:
-                return best_policy_ts
+            if cost != 0:
+                break
     return best_policy_ts
 
 

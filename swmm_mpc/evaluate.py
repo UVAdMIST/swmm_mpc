@@ -232,7 +232,7 @@ def evaluate(*individual):
     node_fld_cost = get_flood_cost(rpt, sm.run.node_flood_weight_dict)
 
     # get deviation costs
-    deviation_cost = get_deviation_cost(rpt, sm.run.glo_target_depth_dict)
+    deviation_cost = get_deviation_cost(rpt, sm.run.target_depth_dict)
 
     # convert the contents of the output file into a cost
     cost = sm.run.flood_weight*node_fld_cost + sm.run.dev_weight*deviation_cost

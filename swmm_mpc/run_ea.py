@@ -13,10 +13,7 @@ def run_ea(work_dir, config_file, **ga_params):
     creator.create('Individual', list, fitness=creator.FitnessMin)
 
     print config_file
-    pool = multiprocessing.Pool(2,
-                                initializer=sm.get_global_run,
-                                initargs=(config_file,)
-                                )
+    pool = multiprocessing.Pool(20)
     toolbox = base.Toolbox()
     toolbox.register('map', pool.map)
     toolbox.register('attr_binary', random.randint, 0, 1)
