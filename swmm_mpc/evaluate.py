@@ -191,21 +191,20 @@ def evaluate(*individual):
         string.ascii_lowercase + string.digits) for _ in range(9))
 
     # make a copy of the process model input file
-    proc_file_dir, proc_file_name = os.path.split(sm.run.inp_process_file_path)
-    tmp_proc_base = proc_file_name.replace('.inp',
-                                           '_tmp_{}'.format(rand_string))
-    tmp_proc_inp = os.path.join(proc_file_dir, tmp_proc_base + '.inp')
-    tmp_proc_rpt = os.path.join(proc_file_dir, tmp_proc_base + '.rpt')
-    copyfile(sm.run.inp_process_file_path, tmp_proc_inp)
+    proc_inp = sm.run.inp_process_file_path
+    tmp_proc_base = proc_inp.replace('.inp',
+                                     '_tmp_{}'.format(rand_string))
+    tmp_proc_inp = tmp_proc_base + '.inp'
+    tmp_proc_rpt = tmp_proc_base + '.rpt'
+    copyfile(proc_inp, tmp_proc_inp)
 
     # make copy of hs file
-    hs_file_path = up.read_hs_filename(sm.run.inp_process_file_path)
-    hs_file_name = os.path.split(hs_file_path)[1]
+    hs_file_path = up.read_hs_filename(proc_inp)
+    hs_file_name = os.path.split(hs_file_path)[-1]
     tmp_hs_file_name = hs_file_name.replace('.hsf',
                                             '_{}.hsf'.format(rand_string))
-
-    tmp_hs_file = os.path.join(proc_file_dir, tmp_hs_file_name)
-    copyfile(hs_file_path, tmp_hs_file)
+    tmp_hs_file_path = os.path.join(sm.run.work_dir, tmp_hs_file_name)
+    copyfile(hs_file_path, tmp_hs_file_path)
 
     # format policies
     if sm.run.opt_method == 'genetic_algorithm':
@@ -220,7 +219,7 @@ def evaluate(*individual):
     up.update_controls_and_hotstart(tmp_proc_inp,
                                     sm.run.ctl_time_step,
                                     fmted_policies,
-                                    tmp_hs_file)
+                                    tmp_hs_file_path)
 
     # run the swmm model
     if os.name == 'nt':
@@ -244,5 +243,6 @@ def evaluate(*individual):
     cost = sm.run.flood_weight*node_fld_cost + sm.run.dev_weight*deviation_cost
     os.remove(tmp_proc_inp)
     os.remove(tmp_proc_rpt)
-    os.remove(tmp_hs_file)
+    os.remove(tmp_hs_file_path)
+    print fmted_policies, cost
     return cost

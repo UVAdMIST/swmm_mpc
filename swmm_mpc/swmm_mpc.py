@@ -127,7 +127,7 @@ def run_swmm_mpc(config_file):
 
             dt_hs_file = 'tmp_hsf.hsf'
             print(current_dt)
-            dt_hs_path = os.path.join(run.inp_file_dir, dt_hs_file)
+            dt_hs_path = os.path.join(os.getcwd(), dt_hs_file)
             sim.save_hotstart(dt_hs_path)
 
             link_obj = Links(sim)
@@ -147,7 +147,6 @@ def run_swmm_mpc(config_file):
                     )
             print best_policy, cost
 
-            # fix this
             best_policy_fmt = ev.format_policies(best_policy,
                                                  run.ctl_str_ids,
                                                  run.n_ctl_steps,

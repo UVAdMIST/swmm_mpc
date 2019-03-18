@@ -27,10 +27,9 @@ def run_baeopt(opt_params):
     bounds = get_bounds(sm.run.ctl_str_ids)
     max_iter = opt_params.get('max_iter', 15)
     max_time = opt_params.get('max_time', 120)
-    eps = opt_params.get('eps', 10e-4)
+    eps = opt_params.get('eps', 0.01)
     model_type = opt_params.get('model_type', 'GP')
     acquisition_type = opt_params.get('acquisition_type', 'EI')
-    print opt_params['num_cores'], 'num cores!'
 
     # instantiate object
     bae_opt = BayOpt(ev.evaluate,
@@ -39,6 +38,7 @@ def run_baeopt(opt_params):
                      acquisition_type='EI',
                      evaluator_type='local_penalization',
                      num_cores=opt_params['num_cores'],
+                     batch_size=opt_params['num_cores'],
                      )
     bae_opt.run_optimization(max_iter, max_time, eps)
     return bae_opt.x_opt, bae_opt.fx_opt

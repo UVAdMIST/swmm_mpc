@@ -23,7 +23,6 @@ class test_evaluate(unittest.TestCase):
         n_ctl_steps = 2
         policy = evaluate.gene_to_policy_dict(gene, self.ctl_str_ids,
                                               n_ctl_steps)
-        # print (policy)
         self.assertEqual(policy, {'ORIFICE r1': [0.714, 0.857],
                                   'PUMP p1': ['OFF', 'ON']})
 
@@ -56,7 +55,20 @@ class test_evaluate(unittest.TestCase):
         split = evaluate.split_gene_by_ctl_ts(gene, ctl_str_ids, n_steps)
         expected = [[[1, 0, 1], [0, 0, 1]], [[1, 0, 0], [1, 1, 1]]]
         self.assertEqual(expected, split)
-        
+
+
+    def test_split_list(self):
+        l = [1, 2, 3, 4, 5, 6]
+        n = 2
+        split = evaluate.split_list(l, n)
+        expected = [[1, 2, 3], [4, 5, 6]]
+        self.assertEqual(split, expected)
+
+        n = 3
+        split = evaluate.split_list(l, n)
+        expected = [[1, 2], [3, 4], [5, 6]]
+        self.assertEqual(split, expected)
+
 
 
 if __name__ == '__main__':
