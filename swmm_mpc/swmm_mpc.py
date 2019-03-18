@@ -8,7 +8,7 @@ import update_process_model_input_file as up
 import evaluate as ev
 import run_ea as ra
 import json
-# import run_baeopt as bo
+import run_baeopt as bo
 
 run = None
 
@@ -28,13 +28,21 @@ class swmm_mpc_run(object):
         self.work_dir = os.path.abspath(config_dict['work_dir'])
         self.results_dir = os.path.abspath(config_dict['results_dir'])
         self.opt_method = config_dict['opt_method']
-        self.optimization_params = config_dict['optimization_params']
+        self.optimization_params = config_dict.get('optimization_params', {})
+        if 'num_cores' in self.optimization_params:
+            if type(self.optimization_params['num_cores']) != int:
+                self.optimization_params['num_cores'] = 1
+        else:
+            self.optimization_params['num_cores'] = 1
         self.run_suffix = config_dict['run_suffix']
         self.target_depth_dict = config_dict.get('target_depth_dict', None)
         self.node_flood_weight_dict = config_dict.get('node_flood_weight_dict',
                                                       None)
         self.flood_weight = config_dict.get('flood_weight', 1)
-        self.dev_weight = config_dict.get('dev_weight', 0)
+        if self.target_depth_dict:
+            self.dev_weight = config_dict.get('dev_weight', 1)
+        else:
+            self.dev_weight = config_dict.get('dev_weight', 0)
         self.log_file = os.path.join(self.results_dir,
                                      'log_{}'.format(self.run_suffix))
 
@@ -130,18 +138,20 @@ def run_swmm_mpc(config_file):
 
             if run.opt_method == 'genetic_algorithm':
                 best_policy, cost = ra.run_ea(run.work_dir, config_file,
-                                              **run.optimization_params)
+                                              run.optimization_params)
             elif run.opt_method == 'bayesian_opt':
-                pass
-                # best_policy, cost = bo.run_baeopt(optimization_params)
+                best_policy, cost = bo.run_baeopt(run.optimization_params)
             else:
                 raise ValueError(
                     '{} not valid opt method'.format(run.opt_method)
                     )
+            print best_policy, cost
 
-            best_policy_fmt = ev.gene_to_policy_dict(best_policy,
-                                                     run.ctl_str_ids,
-                                                     run.n_ctl_steps)
+            # fix this
+            best_policy_fmt = ev.format_policies(best_policy,
+                                                 run.ctl_str_ids,
+                                                 run.n_ctl_steps,
+                                                 run.opt_method)
             best_policy_ts = update_policy_ts_list(best_policy_fmt,
                                                    current_dt,
                                                    run.ctl_time_step,
