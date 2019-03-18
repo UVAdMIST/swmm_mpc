@@ -1,4 +1,5 @@
 import string
+import numpy as np
 import sys
 import random
 import os
@@ -209,6 +210,8 @@ def evaluate(*individual):
     # format policies
     if sm.run.opt_method == 'genetic_algorithm':
         individual = individual[0]
+    elif sm.run.opt_method == 'bayesian_opt':
+        individual = np.squeeze(individual)
         
     fmted_policies = format_policies(individual, sm.run.ctl_str_ids,
                                      sm.run.n_ctl_steps, sm.run.opt_method)
@@ -242,4 +245,4 @@ def evaluate(*individual):
     os.remove(tmp_proc_inp)
     os.remove(tmp_proc_rpt)
     os.remove(tmp_hs_file)
-    return cost,
+    return cost
