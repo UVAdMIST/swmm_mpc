@@ -8,6 +8,11 @@ import evaluate as ev
 import swmm_mpc as sm
 
 
+def evaluate_ea(individual):
+    cost = ev.evaluate(individual)
+    return cost,
+
+
 def run_ea(work_dir, config_file, ga_params):
     creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
     creator.create('Individual', list, fitness=creator.FitnessMin)
@@ -19,7 +24,7 @@ def run_ea(work_dir, config_file, ga_params):
     toolbox.register('mate', tools.cxTwoPoint)
     toolbox.register('mutate', tools.mutFlipBit, indpb=0.20)
     toolbox.register('select', tools.selTournament, tournsize=6)
-    toolbox.register('evaluate', ev.evaluate_ea)
+    toolbox.register('evaluate', evaluate_ea)
 
     policy_len = get_policy_length(sm.run.ctl_str_ids,
                                    sm.run.n_ctl_steps)
@@ -59,11 +64,6 @@ def write_pop_to_file(population, pop_file):
     """
     with open(pop_file, 'w') as myfile:
         json.dump(population, myfile)
-
-
-def evaluate_ea(individual):
-    cost = ev.evaluate(individual)
-    return cost,
 
 
 def mutate_pop(best_policy, nindividuals, control_str_ids, n_steps):
