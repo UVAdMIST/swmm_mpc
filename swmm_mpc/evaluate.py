@@ -172,7 +172,7 @@ def list_to_policy(policy, control_str_ids, n_control_steps):
 
 def format_policies(policy, control_str_ids, n_control_steps, opt_method):
     if opt_method == 'genetic_algorithm':
-        return gene_to_policy_dict(policy[0], control_str_ids, n_control_steps)
+        return gene_to_policy_dict(policy, control_str_ids, n_control_steps)
     elif opt_method == 'bayesian_opt':
         return list_to_policy(policy, control_str_ids, n_control_steps)
 
@@ -207,6 +207,9 @@ def evaluate(*individual):
     copyfile(hs_file_path, tmp_hs_file)
 
     # format policies
+    if sm.run.opt_method == 'genetic_algorithm':
+        individual = individual[0]
+        
     fmted_policies = format_policies(individual, sm.run.ctl_str_ids,
                                      sm.run.n_ctl_steps, sm.run.opt_method)
 
