@@ -51,6 +51,22 @@ def get_deviation_cost(rpt, target_depth_dict):
     return sum(node_deviation_costs)
 
 
+def get_cost(rpt_file, node_flood_weight_dict, flood_weight, target_depth_dict,
+             dev_weight):
+    # read the output file
+    rpt = rpt_ele('{}'.format(rpt_file))
+
+    # get flooding costs
+    node_fld_cost = get_flood_cost(rpt, node_flood_weight_dict)
+
+    # get deviation costs
+    deviation_cost = get_deviation_cost(rpt, target_depth_dict)
+
+    # convert the contents of the output file into a cost
+    cost = flood_weight*node_fld_cost + dev_weight*deviation_cost
+    return cost
+
+
 def bits_to_decimal(bits):
     bits_as_string = "".join(str(i) for i in bits)
     return float(int(bits_as_string, 2))
@@ -178,20 +194,12 @@ def format_policies(policy, control_str_ids, n_control_steps, opt_method):
         return list_to_policy(policy, control_str_ids, n_control_steps)
 
 
-def evaluate(*individual):
-    """
-    evaluate the performance of an individual given the inp file of the process
-    model, the individual, the control params (ctl_str_ids, horizon, step),
-    and the cost function params (dev_weight/dict, flood weight/dict)
-    """
-    FNULL = open(os.devnull, 'w')
-    # prep files
+def prep_tmp_files(proc_inp, work_dir):
     # make process model tmp file
     rand_string = ''.join(random.choice(
         string.ascii_lowercase + string.digits) for _ in range(9))
 
     # make a copy of the process model input file
-    proc_inp = sm.run.inp_process_file_path
     tmp_proc_base = proc_inp.replace('.inp',
                                      '_tmp_{}'.format(rand_string))
     tmp_proc_inp = tmp_proc_base + '.inp'
@@ -205,44 +213,52 @@ def evaluate(*individual):
                                             '_{}.hsf'.format(rand_string))
     tmp_hs_file_path = os.path.join(sm.run.work_dir, tmp_hs_file_name)
     copyfile(hs_file_path, tmp_hs_file_path)
+    return tmp_proc_inp, tmp_proc_rpt, tmp_hs_file_path
+
+
+def evaluate(*individual):
+    """
+    evaluate the performance of an individual given the inp file of the process
+    model, the individual, the control params (ctl_str_ids, horizon, step),
+    and the cost function params (dev_weight/dict, flood weight/dict)
+    """
+    FNULL = open(os.devnull, 'w')
+    # prep files
+    tmp_inp, tmp_rpt, tmp_hs = prep_tmp_files(sm.run.inp_process_file_path,
+                                              sm.run.work_dir)
 
     # format policies
     if sm.run.opt_method == 'genetic_algorithm':
         individual = individual[0]
     elif sm.run.opt_method == 'bayesian_opt':
         individual = np.squeeze(individual)
-        
+
     fmted_policies = format_policies(individual, sm.run.ctl_str_ids,
                                      sm.run.n_ctl_steps, sm.run.opt_method)
 
     # update controls
-    up.update_controls_and_hotstart(tmp_proc_inp,
+    up.update_controls_and_hotstart(tmp_inp,
                                     sm.run.ctl_time_step,
                                     fmted_policies,
-                                    tmp_hs_file_path)
+                                    tmp_hs)
 
     # run the swmm model
     if os.name == 'nt':
         swmm_exe_cmd = 'swmm5.exe'
     elif sys.platform.startswith('linux'):
         swmm_exe_cmd = 'swmm5'
-    cmd = '{} {} {}'.format(swmm_exe_cmd, tmp_proc_inp,
-                            tmp_proc_rpt)
+    cmd = '{} {} {}'.format(swmm_exe_cmd, tmp_inp,
+                            tmp_rpt)
     subprocess.call(cmd, shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
 
-    # read the output file
-    rpt = rpt_ele('{}'.format(tmp_proc_rpt))
+    # get cost
+    cost = get_cost(tmp_rpt,
+                    sm.run.node_flood_weight_dict,
+                    sm.run.flood_weight,
+                    sm.run.target_depth_dict,
+                    sm.run.dev_weight)
 
-    # get flooding costs
-    node_fld_cost = get_flood_cost(rpt, sm.run.node_flood_weight_dict)
-
-    # get deviation costs
-    deviation_cost = get_deviation_cost(rpt, sm.run.target_depth_dict)
-
-    # convert the contents of the output file into a cost
-    cost = sm.run.flood_weight*node_fld_cost + sm.run.dev_weight*deviation_cost
-    os.remove(tmp_proc_inp)
-    os.remove(tmp_proc_rpt)
-    os.remove(tmp_hs_file_path)
-    print fmted_policies, cost
+    os.remove(tmp_inp)
+    os.remove(tmp_rpt)
+    os.remove(tmp_hs)
     return cost
