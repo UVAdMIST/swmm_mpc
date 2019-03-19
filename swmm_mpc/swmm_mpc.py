@@ -1,5 +1,6 @@
 import os
 import datetime
+import random
 from shutil import copyfile
 import pandas as pd
 import pyswmm
@@ -281,3 +282,19 @@ def validate_ctl_str_ids(ctl_str_ids):
             raise ValueError(
                 '{} not valid ctl type. should be one of {}'.format(
                     ctl_id, valid_structure_types))
+
+
+def get_initial_guess(best_pol, ctl_str_ids):
+    split_by_ctl = ev.split_list(best_pol, len(ctl_str_ids))
+    new_guess = []
+    for pol in split_by_ctl:
+        if len(pol) == 1:
+            return best_pol
+        else:
+            # take out first setting
+            new_pol = pol[1:]
+            # add random setting at end
+            new_pol.append(random.random())
+            new_guess.extend(new_pol)
+    return new_guess
+
