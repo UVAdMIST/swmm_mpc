@@ -147,7 +147,8 @@ def run_swmm_mpc(config_file):
                     '{} not valid opt method'.format(run.opt_method)
                     )
             print best_policy, cost
-            run.optimization_params['initial_guess'] = best_policy
+            initial_guess = get_initial_guess(best_policy, run.ctl_str_ids)
+            run.optimization_params['initial_guess'] = initial_guess
 
             best_policy_fmt = ev.format_policies(best_policy,
                                                  run.ctl_str_ids,
