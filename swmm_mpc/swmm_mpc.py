@@ -104,7 +104,7 @@ def run_swmm_mpc(config_file):
     print(vars(run))
 
     with open(run.log_file, 'w') as f:
-        f.write(vars(run))
+        f.write(str(vars(run)))
         f.write('\n')
 
     pyswmm.lib.use('libswmm5_hs.so')
