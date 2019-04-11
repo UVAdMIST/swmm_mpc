@@ -34,6 +34,14 @@ def run_swmm_mpc(inp_file_path, control_horizon, control_time_step,
                             and the values are the relative weights for
                             weighting the amount of flooding for a given node.
                             e.g., {'st1': 10, 'J3': 1}
+    flood_weight: [int] factor by which the summed flood cost will be
+                        multiplied. This is used to scale the weight of the 
+                        flooding compared to the weight of the deviations from
+                        target water levels. 'flood_weight' and 'dev_weight' 
+                        conventionally sum to 1
+    dev_weight: [int] the counterpart of the 'flood_weight' parameter but for 
+                      cost from deviations from target water levels.
+                      'flood_weight' and 'dev_weight' conventionally sum to 1
     ngen: [int] number of generations for GA
     nindividuals: [int] number of individuals for initial generation in GA
     run_suffix: [string] will be added to the results filename
