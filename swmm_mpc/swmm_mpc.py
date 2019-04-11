@@ -104,7 +104,7 @@ def run_swmm_mpc(config_file):
     print(vars(run))
 
     with open(run.log_file, 'w') as f:
-        f.write(str(locals()))
+        f.write(str(vars(run)))
         f.write('\n')
 
     pyswmm.lib.use('libswmm5_hs.so')
@@ -142,12 +142,13 @@ def run_swmm_mpc(config_file):
                                               run.optimization_params)
             elif run.opt_method == 'bayesian_opt':
                 best_policy, cost = bo.run_baeopt(run.optimization_params)
+                initial_guess = get_initial_guess(best_policy, run.ctl_str_ids)
+                run.optimization_params['initial_guess'] = initial_guess
             else:
                 raise ValueError(
                     '{} not valid opt method'.format(run.opt_method)
                     )
             print best_policy, cost
-            run.optimization_params['initial_guess'] = best_policy
 
             best_policy_fmt = ev.format_policies(best_policy,
                                                  run.ctl_str_ids,
@@ -246,7 +247,6 @@ def save_results_file(best_policy_ts, ctl_str_ids, results_dir,
     ctl_settings_df.index = pd.DatetimeIndex(ctl_settings_df.index)
     # add a row at the beginning of the policy since controls start open
     sim_start_dt = pd.to_datetime(sim_start_time)
-    print(ctl_settings_df)
     initial_states = get_initial_states(ctl_str_ids)
     ctl_settings_df.loc[sim_start_dt] = initial_states
     ctl_settings_df.sort_index(inplace=True)
@@ -285,6 +285,7 @@ def validate_ctl_str_ids(ctl_str_ids):
 
 
 def get_initial_guess(best_pol, ctl_str_ids):
+    best_pol = best_pol.tolist()
     split_by_ctl = ev.split_list(best_pol, len(ctl_str_ids))
     new_guess = []
     for pol in split_by_ctl:
