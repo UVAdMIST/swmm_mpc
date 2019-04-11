@@ -55,6 +55,8 @@ def run_ea(work_dir, config_file, ga_params):
     seed_next_population(hof[0], ga_params.get('nindividuals', 25),
                          sm.run.ctl_str_ids, pop_file, sm.run.n_ctl_steps)
     min_cost = min(logbook.select("min"))
+    pool.close()
+    pool.join()
     return hof[0], min_cost
 
 
