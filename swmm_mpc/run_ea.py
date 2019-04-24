@@ -5,38 +5,29 @@ import multiprocessing
 from deap import base, creator, tools, algorithms
 import numpy as np
 import evaluate as ev
+import swmm_mpc as sm
 
 
-creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
-creator.create('Individual', list, fitness=creator.FitnessMin)
-
-pool = multiprocessing.Pool(20)
-toolbox = base.Toolbox()
-toolbox.register('map', pool.map)
-toolbox.register('attr_binary', random.randint, 0, 1)
-toolbox.register('mate', tools.cxTwoPoint)
-toolbox.register('mutate', tools.mutFlipBit, indpb=0.20)
-toolbox.register('select', tools.selTournament, tournsize=6)
+def evaluate_ea(individual):
+    cost = ev.evaluate(individual)
+    return cost,
 
 
-def run_ea(ngen, nindividuals, work_dir, hs_file_path,
-           inp_process_file_path, sim_dt, control_time_step, n_control_steps,
-           control_str_ids, target_depth_dict, node_flood_weight_dict,
-           flood_weight, dev_weight):
-    toolbox.register('evaluate',
-                     ev.evaluate,
-                     hs_file_path=hs_file_path,
-                     process_file_path=inp_process_file_path,
-                     sim_dt=sim_dt,
-                     control_time_step=control_time_step,
-                     n_control_steps=n_control_steps,
-                     control_str_ids=control_str_ids,
-                     node_flood_weight_dict=node_flood_weight_dict,
-                     target_depth_dict=target_depth_dict,
-                     flood_weight=flood_weight,
-                     dev_weight=dev_weight
-                     )
-    policy_len = get_policy_length(control_str_ids, n_control_steps)
+def run_ea(work_dir, config_file, ga_params):
+    creator.create('FitnessMin', base.Fitness, weights=(-1.0,))
+    creator.create('Individual', list, fitness=creator.FitnessMin)
+
+    pool = multiprocessing.Pool(ga_params['num_cores'])
+    toolbox = base.Toolbox()
+    toolbox.register('map', pool.map)
+    toolbox.register('attr_binary', random.randint, 0, 1)
+    toolbox.register('mate', tools.cxTwoPoint)
+    toolbox.register('mutate', tools.mutFlipBit, indpb=0.20)
+    toolbox.register('select', tools.selTournament, tournsize=6)
+    toolbox.register('evaluate', evaluate_ea)
+
+    policy_len = get_policy_length(sm.run.ctl_str_ids,
+                                   sm.run.n_ctl_steps)
     toolbox.register('individual', tools.initRepeat, creator.Individual,
                      toolbox.attr_binary, policy_len)
 
@@ -50,7 +41,7 @@ def run_ea(ngen, nindividuals, work_dir, hs_file_path,
     else:
         toolbox.register('population', tools.initRepeat, list,
                          toolbox.individual)
-        pop = toolbox.population(n=nindividuals)
+        pop = toolbox.population(n=ga_params.get('nindividuals', 25))
 
     hof = tools.HallOfFame(1)
     stats = tools.Statistics(lambda ind: ind.fitness.values)
@@ -58,11 +49,14 @@ def run_ea(ngen, nindividuals, work_dir, hs_file_path,
     stats.register('min', np.min)
     stats.register('max', np.max)
     pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2,
-                                       ngen=ngen, stats=stats, halloffame=hof,
-                                       verbose=True)
-    seed_next_population(hof[0], nindividuals, control_str_ids, pop_file,
-                         n_control_steps)
+                                       ngen=ga_params.get('ngen', 7),
+                                       stats=stats,
+                                       halloffame=hof, verbose=True)
+    seed_next_population(hof[0], ga_params.get('nindividuals', 25),
+                         sm.run.ctl_str_ids, pop_file, sm.run.n_ctl_steps)
     min_cost = min(logbook.select("min"))
+    pool.close()
+    pool.join()
     return hof[0], min_cost
 
 
@@ -85,16 +79,15 @@ def mutate_pop(best_policy, nindividuals, control_str_ids, n_steps):
                                               n_steps)
         mutated_ind = []
         for seg_by_ctl in split_lists:
+            setting_length = len(seg_by_ctl[0])
             # disregard the first control step since we need future policy
             seg_by_ctl = seg_by_ctl[1:]
-            # set setting length to one in case there is only one setting 
-            setting_length = 1
+            # set setting length to one in case there is only one setting
             # mutate the remaining settings
             mutated_ctl_segment = []
             for seg_by_ts in seg_by_ctl:
                 tools.mutFlipBit(seg_by_ts, 0.2)
                 mutated_ctl_segment.extend(seg_by_ts)
-                setting_length = len(seg_by_ts)
             # add a random setting for the last time step in the future policy
             rand_sttng = [random.randint(0, 1) for i in range(setting_length)]
             mutated_ctl_segment.extend(rand_sttng)

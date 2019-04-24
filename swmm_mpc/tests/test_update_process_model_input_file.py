@@ -2,7 +2,7 @@ import unittest
 from swmm_mpc import update_process_model_input_file as up
 
 
-class test_evaluate(unittest.TestCase):
+class test_update_process_model_input_file(unittest.TestCase):
 
     
     def test_get_control_rule_string_pump(self):
