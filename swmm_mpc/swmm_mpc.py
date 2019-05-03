@@ -2,6 +2,7 @@ import os
 import datetime
 import random
 from shutil import copyfile
+import shutil
 import pandas as pd
 import pyswmm
 from pyswmm import Simulation, Links
@@ -183,6 +184,10 @@ def run_swmm_mpc(config_file):
     # update original inp file with found control policy
     up.update_controls_with_policy(run.inp_file_path, results_file)
 
+    # remove all files in 'work'
+    delete_files_in_dir(run.work_dir)
+
+
 
 def update_policy_ts_list(fmtd_policy, current_dt, ctl_time_step,
                           best_policy_ts, cost):
@@ -299,3 +304,12 @@ def get_initial_guess(best_pol, ctl_str_ids):
             new_guess.extend(new_pol)
     return new_guess
 
+def delete_files_in_dir(folder):
+    for the_file in os.listdir(folder):
+        file_path = os.path.join(folder, the_file)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path): shutil.rmtree(file_path)
+        except Exception as e:
+            print(e)
