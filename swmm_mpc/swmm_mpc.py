@@ -105,6 +105,7 @@ def run_swmm_mpc(config_file):
                             and the values are the relative weights for
                             weighting the amount of flooding for a given node.
                             e.g., {'st1': 10, 'J3': 1}. Default: None
+
     '''
     # save params to file
     get_global_run(config_file)
