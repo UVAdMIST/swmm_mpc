@@ -89,16 +89,22 @@ def run_swmm_mpc(config_file):
                             * nindividuals: [int] number of individuals for
                                                   initial generation in GA
     run_suffix: [string] will be added to the results filename
+    flood_weight: [number] overall weight for the sum of all flooding relative
+                  to the overall weight for the sum of the absolute deviations
+                  from target depths (dev_weight). Default: 1
+    dev_weight: [number] overall weight for the sum of the absolute deviations
+                from target depths. This weight is relative to the flood_weight
+                Default: 0
     target_depth_dict: [dict] dictionary where the keys are the nodeids and
                        the values are a dictionary. The inner dictionary has
                        two keys, 'target', and 'weight'. These values specify
                        the target depth for the nodeid and the weight given
-                       to that in the cost function.
+                       to that in the cost function. Default: None
                        e.g., {'St1': {'target': 1, 'weight': 0.1}}
     node_flood_weight_dict: [dict] dictionary where the keys are the node ids
                             and the values are the relative weights for
                             weighting the amount of flooding for a given node.
-                            e.g., {'st1': 10, 'J3': 1}
+                            e.g., {'st1': 10, 'J3': 1}. Default: None
     '''
     # save params to file
     get_global_run(config_file)
