@@ -1,4 +1,5 @@
 import string
+import numpy as np
 import sys
 import random
 import os
@@ -6,6 +7,7 @@ from shutil import copyfile
 import subprocess
 from rpt_ele import rpt_ele
 import update_process_model_input_file as up
+import swmm_mpc as sm
 
 
 def get_flood_cost_from_dict(rpt, node_flood_weight_dict):
@@ -49,6 +51,22 @@ def get_deviation_cost(rpt, target_depth_dict):
     return sum(node_deviation_costs)
 
 
+def get_cost(rpt_file, node_flood_weight_dict, flood_weight, target_depth_dict,
+             dev_weight):
+    # read the output file
+    rpt = rpt_ele('{}'.format(rpt_file))
+
+    # get flooding costs
+    node_fld_cost = get_flood_cost(rpt, node_flood_weight_dict)
+
+    # get deviation costs
+    deviation_cost = get_deviation_cost(rpt, target_depth_dict)
+
+    # convert the contents of the output file into a cost
+    cost = flood_weight*node_fld_cost + dev_weight*deviation_cost
+    return cost
+
+
 def bits_to_decimal(bits):
     bits_as_string = "".join(str(i) for i in bits)
     return float(int(bits_as_string, 2))
@@ -68,7 +86,7 @@ def bits_to_perc(bits):
 def bit_to_on_off(bit):
     """
     convert single bit to "ON" or "OFF"
-    bit:    [int] or [list] 
+    bit:    [int] or [list]
     """
     if type(bit) == list:
         if len(bit) > 1:
@@ -107,7 +125,7 @@ def split_gene_by_ctl_ts(gene, control_str_ids, n_steps):
         # get the segment for the control
         gene_seg = gene[:n_bits]
         # split to get the different time steps
-        gene_seg_per_ts = split_list(gene_seg, n_steps) 
+        gene_seg_per_ts = split_list(gene_seg, n_steps)
         # add the gene segment to the overall list
         split_gene.append(gene_seg_per_ts)
         # move the beginning of the gene to the end of the current ctl segment
@@ -153,67 +171,94 @@ def gene_to_policy_dict(gene, control_str_ids, n_control_steps):
     return fmted_policies
 
 
-def evaluate(individual, hs_file_path, process_file_path, sim_dt,
-             control_time_step, n_control_steps, control_str_ids,
-             node_flood_weight_dict, target_depth_dict, flood_weight,
-             dev_weight):
-    FNULL = open(os.devnull, 'w')
+def list_to_policy(policy, control_str_ids, n_control_steps):
+    """
+    ASSUMPTION: round decimal number to BOOLEAN
+    """
+    split_policies = split_list(policy, len(control_str_ids))
+    fmted_policies = dict()
+    for i, control_id in enumerate(control_str_ids):
+        control_type = control_id.split()[0]
+        if control_type == 'ORIFICE' or control_type == 'WEIR':
+            fmted_policies[control_id] = split_policies[i]
+        elif control_type == 'PUMP':
+            on_off = [bit_to_on_off(round(p)) for p in split_policies[i]]
+            fmted_policies[control_id] = on_off
+    return fmted_policies
+
+
+def format_policies(policy, control_str_ids, n_control_steps, opt_method):
+    if opt_method == 'genetic_algorithm':
+        return gene_to_policy_dict(policy, control_str_ids, n_control_steps)
+    elif opt_method == 'bayesian_opt':
+        return list_to_policy(policy, control_str_ids, n_control_steps)
+
+
+def prep_tmp_files(proc_inp, work_dir):
     # make process model tmp file
     rand_string = ''.join(random.choice(
         string.ascii_lowercase + string.digits) for _ in range(9))
 
     # make a copy of the process model input file
-    process_file_dir, process_file_name = os.path.split(process_file_path)
-    tmp_process_base = process_file_name.replace('.inp',
-                                                 '_tmp_{}_{}'.format(
-						 sim_dt,
-						 rand_string
-						 ))
-    tmp_process_inp = os.path.join(process_file_dir,
-                                   tmp_process_base + '.inp')
-    tmp_process_rpt = os.path.join(process_file_dir,
-                                   tmp_process_base + '.rpt')
-    copyfile(process_file_path, tmp_process_inp)
+    tmp_proc_base = proc_inp.replace('.inp',
+                                     '_tmp_{}'.format(rand_string))
+    tmp_proc_inp = tmp_proc_base + '.inp'
+    tmp_proc_rpt = tmp_proc_base + '.rpt'
+    copyfile(proc_inp, tmp_proc_inp)
 
     # make copy of hs file
-    hs_file_name = os.path.split(hs_file_path)[1]
+    hs_file_path = up.read_hs_filename(proc_inp)
+    hs_file_name = os.path.split(hs_file_path)[-1]
     tmp_hs_file_name = hs_file_name.replace('.hsf',
                                             '_{}.hsf'.format(rand_string))
+    tmp_hs_file_path = os.path.join(sm.run.work_dir, tmp_hs_file_name)
+    copyfile(hs_file_path, tmp_hs_file_path)
+    return tmp_proc_inp, tmp_proc_rpt, tmp_hs_file_path
 
-    tmp_hs_file = os.path.join(process_file_dir, tmp_hs_file_name)
-    copyfile(hs_file_path, tmp_hs_file)
 
-    # convert individual to percentages
-    fmted_policies = gene_to_policy_dict(individual, control_str_ids,
-                                         n_control_steps)
+def evaluate(*individual):
+    """
+    evaluate the performance of an individual given the inp file of the process
+    model, the individual, the control params (ctl_str_ids, horizon, step),
+    and the cost function params (dev_weight/dict, flood weight/dict)
+    """
+    FNULL = open(os.devnull, 'w')
+    # prep files
+    tmp_inp, tmp_rpt, tmp_hs = prep_tmp_files(sm.run.inp_process_file_path,
+                                              sm.run.work_dir)
+
+    # format policies
+    if sm.run.opt_method == 'genetic_algorithm':
+        individual = individual[0]
+    elif sm.run.opt_method == 'bayesian_opt':
+        individual = np.squeeze(individual)
+
+    fmted_policies = format_policies(individual, sm.run.ctl_str_ids,
+                                     sm.run.n_ctl_steps, sm.run.opt_method)
 
     # update controls
-    up.update_controls_and_hotstart(tmp_process_inp,
-                                    control_time_step,
+    up.update_controls_and_hotstart(tmp_inp,
+                                    sm.run.ctl_time_step,
                                     fmted_policies,
-                                    tmp_hs_file)
+                                    tmp_hs)
 
     # run the swmm model
     if os.name == 'nt':
         swmm_exe_cmd = 'swmm5.exe'
     elif sys.platform.startswith('linux'):
         swmm_exe_cmd = 'swmm5'
-    cmd = '{} {} {}'.format(swmm_exe_cmd, tmp_process_inp,
-                            tmp_process_rpt)
+    cmd = '{} {} {}'.format(swmm_exe_cmd, tmp_inp,
+                            tmp_rpt)
     subprocess.call(cmd, shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
 
-    # read the output file
-    rpt = rpt_ele('{}'.format(tmp_process_rpt))
+    # get cost
+    cost = get_cost(tmp_rpt,
+                    sm.run.node_flood_weight_dict,
+                    sm.run.flood_weight,
+                    sm.run.target_depth_dict,
+                    sm.run.dev_weight)
 
-    # get flooding costs
-    node_flood_cost = get_flood_cost(rpt, node_flood_weight_dict)
-
-    # get deviation costs
-    deviation_cost = get_deviation_cost(rpt, target_depth_dict)
-
-    # convert the contents of the output file into a cost
-    cost = flood_weight*node_flood_cost + dev_weight*deviation_cost
-    os.remove(tmp_process_inp)
-    os.remove(tmp_process_rpt)
-    os.remove(tmp_hs_file)
-    return cost,
+    os.remove(tmp_inp)
+    os.remove(tmp_rpt)
+    os.remove(tmp_hs)
+    return cost

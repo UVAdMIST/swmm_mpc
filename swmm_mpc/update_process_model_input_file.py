@@ -38,7 +38,6 @@ def update_process_model_file(inp_file, new_date_time, hs_file):
 
 
 def find_section(lines, section_name):
-    # check if CONTROL section is in the input file
     start_line = None
     end_line = None
     for i, l in enumerate(lines):
@@ -171,7 +170,11 @@ def get_control_time_step(df, dt_col="datetime"):
     times = (pd.to_datetime(df[dt_col]))
     delta_times = times.diff()
     time_step = delta_times.mean().seconds
-    if time_step % 60:
-        raise Exception("The time step in your file is in between minutes")
-    else:
+    if not time_step % 60:
         return time_step
+    # if it's only off by 1 or two seconds then round down to nearest minute
+    elif time_step % 60 < 3:
+        time_step -= time_step % 60
+        return time_step 
+    else:
+        raise Exception("The time step in your file is in between minutes")

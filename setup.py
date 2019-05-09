@@ -13,6 +13,7 @@ setup(name='swmm_mpc',
           'matplotlib',
           'numpy',
           'deap',
+          'GPyOpt',
           ],
       dependency_links=[
           'git+https://github.com/uva-hydroinformatics/pyswmm.git@feature_save_hotstart#egg=pyswmm-0',
