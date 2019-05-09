@@ -121,7 +121,7 @@ Then to run it, you simply call the script with python:
 python my_swmm_mpc.py
 ```
 # Dockerized code
-A Docker image with swmm_mpc and all of its dependencies can be found at [https://hub.docker.com/r/jsadler2/swmm_mpc/](https://hub.docker.com/r/jsadler2/swmm_mpc/). You would run it like so (**this assumes your results\_dir, your workdir, your .inp file, and your config file (\*.json) are all in the same directory): 
+A Docker image with swmm_mpc and all of its dependencies can be found at [https://hub.docker.com/r/jsadler2/swmm_mpc/](https://hub.docker.com/r/jsadler2/swmm_mpc/). You would run it like so (**this assumes your results\_dir, your workdir, your .inp file, and your config file (\*.json) are all in the same directory**): 
 
 ```
 docker run -v /path/to/run_dir/:/run_dir/ jsadler2/swmm_mpc:latest python /run_script.py
