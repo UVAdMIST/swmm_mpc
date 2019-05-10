@@ -9,7 +9,8 @@ from rpt_ele import rpt_ele
 
 def get_df(rpts, ele, variable, column_names=None):
     """
-    get pandas dataframe of different versions of results for one element for one variable
+    get pandas dataframe of different versions of results for one element for
+    one variable
     rpts: list of rpt_ele objects - rpt_objects to be combined
     ele: string - swmm model element to extract from rpt_ele objects
          (e.g., "Node J3")
@@ -86,7 +87,7 @@ def plot_versions_single(df, variable, ylabel, fontsize, lw, title=None,
         ax.grid(which='both', color='#F0F0F0')
 
     if sublabel:
-        ax.text(0.02, 0.98, sublabel, horizontalalignment='left', 
+        ax.text(0.98, 0.02, sublabel, horizontalalignment='left', 
                 verticalalignment='top', transform=ax.transAxes,
                 fontsize=fontsize)
 
@@ -132,6 +133,7 @@ def make_values_metric(df, variable):
 
 
 def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx,
+                           node_maxes={}, target_depths={},
                            units="english", fontsize=12, figsize=(6, 4), lw=2):
     """
     plot variable results at different nodes in one figure
@@ -144,9 +146,16 @@ def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx,
                 (e.g., ["Passive", "Rules", "MPC"])
     fig_dir: string - directory where file should be saved
     sfx: string - suffix to be put on the end of the file name
+    node_maxes: dict - key is node id, value is maximum value of the variable
+                for the node in same units as 'units' parameter. If present
+                these will be plotted as horizontal lines for reference
+    target_depths: dict - key is node id, value is target depth for the node in
+                   same units as 'units' parameter. If present these will be
+                   plotted as horizontal lines for reference
     units: string - "english" or "metric". If "metric" conversions from english
            units will be performed
     """
+    plt.rc('font', weight='bold', size=fontsize)
     rpts = [rpt_ele(r) for r in rpt_files]
 
     nplots = len(node_id_vars)
@@ -161,6 +170,8 @@ def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx,
         axs_list = [axs]
 
     counter = 0
+    node_max_line = None
+    target_depth_line = None
     for node_id, variable in node_id_vars:
         var_df = get_df(rpts, node_id, variable, rpt_labels)
 
@@ -181,14 +192,35 @@ def plot_versions_together(node_id_vars, rpt_files, rpt_labels, fig_dir, sfx,
             plot_title = "{}".format(variable)
 
         ax = plot_versions_single(var_df, variable, unit_label, fontsize, lw,
-                                  title=plot_title, ax=axs_list[counter],
-                                  sublabel=string.ascii_uppercase[counter])
+                                  title=plot_title, ax=axs_list[counter])
+        node_max = node_maxes.get(node_id)
+        if node_max:
+            node_max_line = ax.axhline(node_max, c='darkred', alpha=0.5,
+                                       label='Max depth')
+
+        target_depth = target_depths.get(node_id)
+        if target_depth:
+            target_depth_line = ax.axhline(target_depth, c='magenta',
+                                           alpha=0.5, label='Target depth')
+
         counter += 1
 
     handles, labels = ax.get_legend_handles_labels()
+    if target_depth_line:
+        handles.insert(1, target_depth_line)
+        labels.insert(1, target_depth_line.get_label())
+    if node_max_line:
+        if target_depth_line:
+            position = 3
+        else:
+            position = 1
+        handles.insert(position, node_max_line)
+        labels.insert(position, node_max_line.get_label())
+
     fig.legend(handles, labels, loc='lower center', ncol=3,
                bbox_to_anchor=(0.5, 0))
     fig.tight_layout()
     fig.subplots_adjust(bottom=0.2, hspace=0.7)
     fig.savefig("{}/{}_{}".format(fig_dir, "combined", sfx), dpi=300)
     plt.show()
+    return fig
