@@ -5,18 +5,12 @@
 
 # Installation
 ## 1. Install swmm_mpc
+**NOTE**: You must have `numpy` installed already or this will not work
 ```
-git clone https://github.com/UVAdMIST/swmm_mpc.git
-pip install swmm_mpc/
-```
-## 2. Install pyswmm
-swmm\_mpc requires a special version of OWA's pyswmm. This version of pyswmm has an additional feature that allows saving a hotstart file at any time step in the simulation run. To install this version of pyswmm do:
+pip install git+https://github.com/UVAdMIST/swmm_mpc
 
 ```
-pip install git+https://github.com/UVAdMIST/pyswmm.git@feature_save_hotstart
-```
-
-## 3. Install EPASWMM5 
+## 2. Install EPASWMM5 
 You will also need to have a working version of EPASWMM5 on your machine and have it added to the path. You can download the source code from the [EPA Website](https://www.epa.gov/water-research/storm-water-management-model-swmm). In Linux you can do this as follows:
 ```
 wget https://www.epa.gov/sites/production/files/2017-03/swmm51012_engine_2.zip
@@ -124,7 +118,7 @@ python my_swmm_mpc.py
 A Docker image with swmm_mpc and all of its dependencies can be found at [https://hub.docker.com/r/jsadler2/swmm_mpc/](https://hub.docker.com/r/jsadler2/swmm_mpc/). You would run it like so (**this assumes your results\_dir, your workdir, your .inp file, and your config file (\*.json) are all in the same directory**): 
 
 ```
-docker run -v /path/to/run_dir/:/run_dir/ jsadler2/swmm_mpc:latest python /run_script.py
+docker run -v /path/to/run_dir/:/run_dir/ -w /run_dir/ jsadler2/swmm_mpc:latest python /run_script.py
 ```
 # Example model 
 An example use case model is found on HydroShare: [https://www.hydroshare.org/resource/73b38d6417ac4352b9dae38a78a47d81/](https://www.hydroshare.org/resource/73b38d6417ac4352b9dae38a78a47d81/).
