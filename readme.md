@@ -39,11 +39,7 @@ export PATH="/path/to/swmm5/src:$PATH"
 ```
 
 # Usage
-The `run_swmm_mpc` function is the main function (maybe the only function) that 
-you will likely use. Here is an example of how it is used. `run_swmm_mpc` takes one and only one argument: the path to your configuration file (see example below).   First I write a small 
-script to indicate the model and the different parameters I want to use, like 
-this (called `my_swmm_mpc.py` in the next step):
-
+The `run_swmm_mpc` function is the main function (maybe the only function) that you will likely use. Here is an example of how it is used. `run_swmm_mpc` takes one and only one argument: the path to your configuration file (see example below).   
 
 ## configuration file
 The configuration file is a json file that specifies all of the parameters you will be using in your swmm_mpc run. There are certain parameters that are required to be specified and others that have a default value and are not required.
@@ -53,8 +49,8 @@ The configuration file is a json file that specifies all of the parameters you w
 2. `ctl_horizon`: [number] ctl horizon in hours
 3. `ctl_time_step`: [number] control time step in seconds
 4. `ctl_str_ids`: [list of strings] ids of control structures for which controls policies will be found. Each should start with one of the key words ORIFICE, PUMP, or WEIR e.g., [ORIFICE R1, ORIFICE R2]
-5. `work_dir`: [string] directory relative to config file where the temporary files will be created
-6. `results_dir`: [string] directory relative to config file where the results will be written
+5. `work_dir`: [string] directory relative to config file where the temporary files will be created. **note**: this must be an existing directory
+6. `results_dir`: [string] directory relative to config file where the results will be written. **note**: this must be an existing directory
 7. `opt_method`: [string] optimization method. Currently supported methods are 'genetic_algorithm', and 'bayesian_opt'
 8. `optimization_params`: [dict] dictionary with key values that will be passed to the optimization function for GA this includes
     * `ngen`: [int] number of generations for GA
